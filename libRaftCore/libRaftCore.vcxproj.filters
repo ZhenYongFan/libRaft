@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="services">
+      <UniqueIdentifier>{7be3b716-b294-412d-8e06-90d49bb2e7f7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="network">
+      <UniqueIdentifier>{2598256e-e044-404a-b8e8-677ff97e858b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -78,6 +84,42 @@
     <ClInclude Include="Log4CxxLogger.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="services\KvRocksdbService.h">
+      <Filter>services</Filter>
+    </ClInclude>
+    <ClInclude Include="services\KvService.h">
+      <Filter>services</Filter>
+    </ClInclude>
+    <ClInclude Include="network\EventBase.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\EventSession.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\IoEventBase.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\ListenEventBase.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\RaftAdminClient.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\RaftClientPool.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\RaftClientSession.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\RaftIoBase.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\RaftServer.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\RaftSession.h">
+      <Filter>network</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -127,6 +169,39 @@
     </ClCompile>
     <ClCompile Include="Log4CxxLogger.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="services\KvRocksdbService.cpp">
+      <Filter>services</Filter>
+    </ClCompile>
+    <ClCompile Include="network\EventBase.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\EventSession.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\IoEventBase.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\ListenEventBase.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\RaftAdminClient.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\RaftClientPool.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\RaftClientSession.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\RaftIoBase.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\RaftServer.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\RaftSession.cpp">
+      <Filter>network</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
