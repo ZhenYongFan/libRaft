@@ -99,7 +99,7 @@ void CRaftMemLog::stableSnapTo(uint64_t i)
     m_unstablePart.StableSnapTo(i);
 }
 
-uint64_t CRaftMemLog::GetLastTerm()
+uint64_t CRaftMemLog::GetLastTerm(void)
 {
     uint64_t u64Term;
     int nErrorNo = GetTerm(GetLastIndex(), u64Term);
@@ -124,7 +124,7 @@ int CRaftMemLog::GetEntries(uint64_t u64Index, uint64_t maxSize, EntryVec &entri
 // allEntries returns all entries in the log.
 void CRaftMemLog::allEntries(EntryVec &entries)
 {
-    int nErrorNo = this->GetEntries(GetFirstIndex(), noLimit, entries);
+    int nErrorNo = GetEntries(GetFirstIndex(), noLimit, entries);
     if (SUCCESS(nErrorNo))
     {
         return;
@@ -149,7 +149,7 @@ bool CRaftMemLog::MaybeCommit(uint64_t u64Index, uint64_t u64Term)
 {
     bool bCommit = false;
     uint64_t u64TestTerm;
-    int nErrorNo = this->GetTerm(u64Index, u64TestTerm);
+    int nErrorNo = GetTerm(u64Index, u64TestTerm);
     if (u64Index > m_pStorage->m_u64Committed && ZeroTermOnErrCompacted(u64TestTerm, nErrorNo) == u64Term)
         bCommit = CommitTo(u64Index);
     return bCommit;
@@ -209,7 +209,7 @@ uint64_t CRaftMemLog::findConflict(const EntryVec& entries)
             if (index <= GetLastIndex())
             {
                 uint64_t dummy;
-                int err = this->GetTerm(index, dummy);
+                int err = GetTerm(index, dummy);
                 m_pLogger->Infof(__FILE__, __LINE__, "found conflict at index %lu [existing term: %lu, conflicting term: %lu]",
                     index, ZeroTermOnErrCompacted(dummy, err), term);
             }

@@ -58,12 +58,12 @@
       <PreprocessorDefinitions>_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalOptions> /utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>../include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;../libRaftCore</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>cppunitd.lib;testrunnerud.lib</AdditionalDependencies>
+      <AdditionalDependencies>cppunitd.lib;testrunnerud.lib;libRaftCore.lib</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -111,6 +111,8 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TestRaft.h" />
     <ClInclude Include="TestRaftDlg.h" />
+    <ClInclude Include="TestSampleFixtrue.h" />
+    <ClInclude Include="TestSeqsFixture.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -119,6 +121,8 @@
     </ClCompile>
     <ClCompile Include="TestRaft.cpp" />
     <ClCompile Include="TestRaftDlg.cpp" />
+    <ClCompile Include="TestSampleFixtrue.cpp" />
+    <ClCompile Include="TestSeqsFixture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="TestRaft.rc" />

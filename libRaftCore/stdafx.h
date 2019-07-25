@@ -29,18 +29,22 @@
     #include <unistd.h>
 #endif
 
+#include <assert.h>
+#include <string.h>
+
+//stl
 #include <string>
 #include <vector>
 #include <map>
 #include <list>
+
 //cxx11
 #include <unordered_map>
 #include <unordered_set>
 #include <thread>
 #include <mutex>
 
-#include <string.h>
-
+//libevent
 #include <event2/event.h>
 #include <event2/thread.h>
 #include <event2/bufferevent.h>

@@ -120,6 +120,12 @@
     <ClInclude Include="network\RaftSession.h">
       <Filter>network</Filter>
     </ClInclude>
+    <ClInclude Include="network\SequenceID.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\rpc.pb.h">
+      <Filter>network</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -203,8 +209,17 @@
     <ClCompile Include="network\RaftSession.cpp">
       <Filter>network</Filter>
     </ClCompile>
+    <ClCompile Include="network\SequenceID.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\rpc.pb.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="raft.proto" />
+    <None Include="network\rpc.proto">
+      <Filter>network</Filter>
+    </None>
   </ItemGroup>
 </Project>

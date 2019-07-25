@@ -61,7 +61,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>log4cxx.lib;Shlwapi.lib;Rpcrt4.lib;libprotobuf-lited.lib;rocksdb.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libEvent_core.lib;log4cxx.lib;Shlwapi.lib;Rpcrt4.lib;libprotobufd.lib;rocksdb.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -87,15 +87,37 @@
     <ClInclude Include="libRaftCore.h" />
     <ClInclude Include="Log4CxxLogger.h" />
     <ClInclude Include="network\EventBase.h" />
-    <ClInclude Include="network\EventSession.h" />
-    <ClInclude Include="network\IoEventBase.h" />
-    <ClInclude Include="network\ListenEventBase.h" />
-    <ClInclude Include="network\RaftAdminClient.h" />
-    <ClInclude Include="network\RaftClientPool.h" />
-    <ClInclude Include="network\RaftClientSession.h" />
-    <ClInclude Include="network\RaftIoBase.h" />
-    <ClInclude Include="network\RaftServer.h" />
-    <ClInclude Include="network\RaftSession.h" />
+    <ClInclude Include="network\EventSession.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="network\IoEventBase.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="network\ListenEventBase.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="network\RaftAdminClient.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="network\RaftClientPool.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="network\RaftClientSession.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="network\RaftIoBase.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="network\RaftServer.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="network\RaftSession.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="network\rpc.pb.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="network\SequenceID.h" />
     <ClInclude Include="Progress.h" />
     <ClInclude Include="Raft.h" />
     <ClInclude Include="raft.pb.h" />
@@ -129,15 +151,37 @@
     <ClCompile Include="libRaftCore.cpp" />
     <ClCompile Include="Log4CxxLogger.cpp" />
     <ClCompile Include="network\EventBase.cpp" />
-    <ClCompile Include="network\EventSession.cpp" />
-    <ClCompile Include="network\IoEventBase.cpp" />
-    <ClCompile Include="network\ListenEventBase.cpp" />
-    <ClCompile Include="network\RaftAdminClient.cpp" />
-    <ClCompile Include="network\RaftClientPool.cpp" />
-    <ClCompile Include="network\RaftClientSession.cpp" />
-    <ClCompile Include="network\RaftIoBase.cpp" />
-    <ClCompile Include="network\RaftServer.cpp" />
-    <ClCompile Include="network\RaftSession.cpp" />
+    <ClCompile Include="network\EventSession.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="network\IoEventBase.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="network\ListenEventBase.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="network\RaftAdminClient.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="network\RaftClientPool.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="network\RaftClientSession.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="network\RaftIoBase.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="network\RaftServer.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="network\RaftSession.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="network\rpc.pb.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="network\SequenceID.cpp" />
     <ClCompile Include="Progress.cpp" />
     <ClCompile Include="Raft.cpp" />
     <ClCompile Include="raft.pb.cpp" />
@@ -157,6 +201,9 @@
     <ClCompile Include="UnstableLog.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="network\rpc.proto">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </None>
     <None Include="raft.proto" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

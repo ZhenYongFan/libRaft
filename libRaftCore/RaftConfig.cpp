@@ -5,7 +5,7 @@
 #include <assert.h>
 #include "RaftConfig.h"
 
-CRaftConfig::CRaftConfig()
+CRaftConfig::CRaftConfig(void)
 {
     m_nMsPerTick = 1000;
     m_nTicksHeartbeat = 1;
@@ -14,6 +14,8 @@ CRaftConfig::CRaftConfig()
     m_nMaxInfilght = 1024;
     m_bCheckQuorum = true;
     m_bPreVote = true;
+    m_nRaftID = 0;
+    m_optionReadOnly = ReadOnlySafe;
 }
 
 CRaftConfig::~CRaftConfig()

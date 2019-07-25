@@ -22,12 +22,20 @@ CRaft::CRaft(const CRaftConfig &cfgNode, CRaftLog *pRaftLog, CRaftQueue *pQueue,
     m_pReadOnly(new CReadOnly(cfgNode.m_optionReadOnly, pLogger)),
     m_pLogger(pLogger)
 {
-   
+    m_stateRaft = eStateFollower;
+    m_bPendingConf = false;
+    m_nTicksElectionElapsed = 0;
+    m_nTicksHeartbeatElapsed = 0;
+    m_nTicksRandomizedElectionTimeout = 1000;
 }
 
 CRaft::~CRaft(void)
 {
-
+    if (NULL != m_pReadOnly)
+    {
+        delete m_pReadOnly;
+        m_pReadOnly = NULL;
+    }
 }
 
 bool CRaft::Init(string &strErrMsg)
@@ -271,6 +279,7 @@ void CRaft::SendAppend(uint32_t nToID)
         {
             //如果该节点已经不存活，则退出(Recent Active为true表示该节点存活）
             m_pLogger->Debugf(__FILE__, __LINE__, "ignore sending snapshot to %llu since it is not recently active", nToID);
+            delete pMsg;
             return;
         }
 
@@ -281,6 +290,7 @@ void CRaft::SendAppend(uint32_t nToID)
         {
             if (err == ErrSnapshotTemporarilyUnavailable)
             {
+                delete pMsg;
                 m_pLogger->Debugf(__FILE__, __LINE__, "%llu failed to send snapshot to %llu because snapshot is temporarily unavailable", m_cfgNode.m_nRaftID, nToID);
                 return;
             }

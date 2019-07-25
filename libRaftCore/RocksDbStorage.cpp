@@ -38,14 +38,18 @@ int CRocksDbStorage::Init(std::string &strDbPath)
         {
             if (IsEmpty())
             {
-                EntryVec entries;
-                entries.push_back(Entry());
-                nInit = Append(entries);
                 m_u64FirstIndex = 0;
                 m_u64LastIndex = 0;
-                nInit = SetCommitted(0);
-                if(0 == nInit)
-                    nInit = SetApplied(0);
+                EntryVec entries;
+                entries.push_back(Entry());
+                //也可以优化为一次batch操作
+                int nAppend = Append(entries);
+                if (0 == nInit)
+                {
+                    nInit = SetCommitted(0);
+                    if (0 == nInit)
+                        nInit = SetApplied(0);
+                }
             }
             else
             {

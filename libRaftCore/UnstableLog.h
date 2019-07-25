@@ -19,6 +19,7 @@ class LIBRAFTCORE_API CUnstableLog
 public:
     CUnstableLog(CLogger *pLogger) : m_pSnapshot(NULL), m_pLogger(pLogger)
     {
+        m_u64Offset = 0;
     }
 
     void TruncateAndAppend(const EntryVec& entries);
@@ -37,12 +38,12 @@ public:
 
     void Slice(uint64_t u64Low, uint64_t u64High, EntryVec &vecEntries);
 protected:
-    void AssertCheckOutOfBounds(uint64_t lo, uint64_t hi);
+    ///\brief 断言索引号范围的正确性
+    void AssertCheckOutOfBounds(uint64_t u64Low, uint64_t u64High);
 public:
     //the incoming unstable snapshot, if any.
     Snapshot* m_pSnapshot;
-    //all entries that have not yet been written to storage.
-    EntryVec m_vecEntries;
-    uint64_t m_u64Offset;
-    CLogger *m_pLogger;
+    EntryVec m_vecEntries; ///< 写入内存但未持久化的日志
+    uint64_t m_u64Offset;  ///< 
+    CLogger *m_pLogger;    ///< 输出日志
 };

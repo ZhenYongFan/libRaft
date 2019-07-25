@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libRaftCore", "libRaftCore\libRaftCore.vcxproj", "{A6BC20F5-806C-46D1-9C5D-CA95B68AAA51}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestRaft", "TestRaft\TestRaft.vcxproj", "{71C76345-DB3C-4B0C-A6D9-5ED81E6BBE4C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A6BC20F5-806C-46D1-9C5D-CA95B68AAA51} = {A6BC20F5-806C-46D1-9C5D-CA95B68AAA51}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{80F69050-1AC5-40E6-8DBF-C403A8A485EC}"
 	ProjectSection(SolutionItems) = preProject
