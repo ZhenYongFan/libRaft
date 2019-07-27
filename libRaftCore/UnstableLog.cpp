@@ -74,7 +74,7 @@ void CUnstableLog::StableTo(uint64_t u64Index, uint64_t u64Term)
         // an unstable entry.
         if (u64GetTerm == u64Term && u64Index >= m_u64Offset)
         {
-            m_vecEntries.erase(m_vecEntries.begin(), m_vecEntries.begin() + u64Index + 1 - m_u64Offset);
+            m_vecEntries.erase(m_vecEntries.begin(), m_vecEntries.begin() + (u64Index + 1 - m_u64Offset));
             m_u64Offset = u64Index + 1;
         }
     }
@@ -107,20 +107,23 @@ void CUnstableLog::TruncateAndAppend(const EntryVec& entriesApp)
         // after is the next index in the u.entries
         // directly append
         m_vecEntries.insert(m_vecEntries.end(), entriesApp.begin(), entriesApp.end());
-        m_pLogger->Infof(__FILE__, __LINE__, "ENTRY size: %d", m_vecEntries.size());
+        if(m_pLogger != NULL)
+            m_pLogger->Infof(__FILE__, __LINE__, "ENTRY size: %d", m_vecEntries.size());
     }
     else if (u64After <= m_u64Offset)
     {
         // The log is being truncated to before our current offset
         // portion, so set the offset and replace the entries
-        m_pLogger->Infof(__FILE__, __LINE__, "replace the unstable entries from index %llu", u64After);
+        if (m_pLogger != NULL)
+            m_pLogger->Infof(__FILE__, __LINE__, "replace the unstable entries from index %llu", u64After);
         m_u64Offset = u64After;
         m_vecEntries = entriesApp;
     }
     else
     {
         // truncate to after and copy to u.entries then append
-        m_pLogger->Infof(__FILE__, __LINE__, "truncate the unstable entries before index %llu", u64After);
+        if (m_pLogger != NULL)
+            m_pLogger->Infof(__FILE__, __LINE__, "truncate the unstable entries before index %llu", u64After);
         vector<Entry> vecEntries; //vector没有删除头尾的接口，此处必须使用临时变量
         Slice(m_u64Offset, u64After, vecEntries);
         m_vecEntries = vecEntries;
@@ -131,15 +134,21 @@ void CUnstableLog::TruncateAndAppend(const EntryVec& entriesApp)
 void CUnstableLog::Slice(uint64_t u64Low, uint64_t u64High, EntryVec &vecEntries)
 {
     AssertCheckOutOfBounds(u64Low, u64High);
-    vecEntries.assign(m_vecEntries.begin() + u64Low - m_u64Offset, m_vecEntries.begin() + u64High - m_u64Offset);
+    vecEntries.assign(m_vecEntries.begin() + (u64Low - m_u64Offset), m_vecEntries.begin() + (u64High - m_u64Offset));
 }
 
 //offset <= lo <= hi <= offset+len(entries)
 void CUnstableLog::AssertCheckOutOfBounds(uint64_t u64Low, uint64_t u64High)
 {
     if (u64Low > u64High)
-        m_pLogger->Fatalf(__FILE__, __LINE__, "invalid unstable.slice %llu > %llu", u64Low, u64High);
+    {
+        if (m_pLogger != NULL)
+            m_pLogger->Fatalf(__FILE__, __LINE__, "invalid unstable.slice %llu > %llu", u64Low, u64High);
+    }
     uint64_t u64Upper = m_u64Offset + (uint64_t)m_vecEntries.size();
     if (u64Low < m_u64Offset || u64Upper < u64High)
-        m_pLogger->Fatalf(__FILE__, __LINE__, "unstable.slice[%llu,%llu) out of bound [%llu,%llu]", u64Low, u64High, m_u64Offset, u64Upper);
+    {
+        if (m_pLogger != NULL)
+            m_pLogger->Fatalf(__FILE__, __LINE__, "unstable.slice[%llu,%llu) out of bound [%llu,%llu]", u64Low, u64High, m_u64Offset, u64Upper);
+    }
 }

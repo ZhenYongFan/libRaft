@@ -17,11 +17,19 @@
 class LIBRAFTCORE_API CUnstableLog
 {
 public:
-    CUnstableLog(CLogger *pLogger) : m_pSnapshot(NULL), m_pLogger(pLogger)
+    CUnstableLog(CLogger *pLogger = NULL) : m_pSnapshot(NULL), m_pLogger(pLogger)
     {
         m_u64Offset = 0;
     }
 
+    ~CUnstableLog(void)
+    {
+        if (NULL != m_pSnapshot)
+        {
+            delete m_pSnapshot;
+            m_pSnapshot = NULL;
+        }
+    }
     void TruncateAndAppend(const EntryVec& entries);
 
     bool MaybeFirstIndex(uint64_t &u64First);

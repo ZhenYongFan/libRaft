@@ -37,7 +37,7 @@ bool CRaftMemLog::MaybeAppend(uint64_t u64Index, uint64_t u64LogTerm,
         else
         {
             uint64_t offset = u64Index + 1;
-            EntryVec appendEntries(entries.begin() + ci - offset, entries.end());
+            EntryVec appendEntries(entries.begin() + (ci - offset), entries.end());
             Append(appendEntries);
         }
     }

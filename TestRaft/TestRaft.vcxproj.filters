@@ -33,10 +33,19 @@
     <ClInclude Include="Resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="TestSampleFixtrue.h">
+    <ClInclude Include="TestSeqsFixture.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="TestSeqsFixture.h">
+    <ClInclude Include="TestUnstableLogFixture.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="raft.pb.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="NullLogger.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TestEventBaseFixtrue.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -50,10 +59,19 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="TestSampleFixtrue.cpp">
+    <ClCompile Include="TestSeqsFixture.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="TestSeqsFixture.cpp">
+    <ClCompile Include="TestUnstableLogFixture.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="raft.pb.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="NullLogger.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TestEventBaseFixtrue.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

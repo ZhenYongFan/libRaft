@@ -3,29 +3,31 @@
 #include "libRaftCore.h"
 #include "RaftDef.h"
 
-void limitSize(uint64_t maxSize, EntryVec &entries);
+BEGIN_C_DECLS
+LIBRAFTCORE_API void limitSize(uint64_t maxSize, EntryVec &entries);
 
-bool isDeepEqualNodes(const vector<uint64_t>& ns1, const vector<uint64_t>& ns2);
-bool isDeepEqualSnapshot(const Snapshot *s1, const Snapshot *s2);
-bool isDeepEqualEntries(const EntryVec& ents1, const EntryVec& ents2);
-bool isDeepEqualReadStates(const vector<CReadState*>& rs1, const vector<CReadState*>& rs2);
-bool isDeepEqualMessage(const Message& msg1, const Message& msg2);
-bool isHardStateEqual(const HardState& h1, const HardState& h2);
-bool isSoftStateEqual(const CSoftState& s1, const CSoftState& s2);
-bool isEmptySnapshot(const Snapshot* snapshot);
-int GetNumOfPendingConf(const EntryVec& entries);
-MessageType VoteRespMsgType(MessageType typeMsg);
+LIBRAFTCORE_API bool isDeepEqualNodes(const vector<uint64_t>& ns1, const vector<uint64_t>& ns2);
+LIBRAFTCORE_API bool isDeepEqualSnapshot(const Snapshot *s1, const Snapshot *s2);
+LIBRAFTCORE_API bool isDeepEqualEntries(const EntryVec& ents1, const EntryVec& ents2);
+LIBRAFTCORE_API bool isDeepEqualReadStates(const vector<CReadState*>& rs1, const vector<CReadState*>& rs2);
+LIBRAFTCORE_API bool isDeepEqualMessage(const Message& msg1, const Message& msg2);
+LIBRAFTCORE_API bool isHardStateEqual(const HardState& h1, const HardState& h2);
+LIBRAFTCORE_API bool isSoftStateEqual(const CSoftState& s1, const CSoftState& s2);
+LIBRAFTCORE_API bool isEmptySnapshot(const Snapshot* snapshot);
+LIBRAFTCORE_API int GetNumOfPendingConf(const EntryVec& entries);
+LIBRAFTCORE_API MessageType VoteRespMsgType(MessageType typeMsg);
 
-bool IsLocalMessage(const MessageType typeMsg);
-bool IsResponseMessage(const MessageType typeMsg);
+LIBRAFTCORE_API bool IsLocalMessage(const MessageType typeMsg);
+LIBRAFTCORE_API bool IsResponseMessage(const MessageType typeMsg);
 
 // string util
-string joinStrings(const vector<string>& strs, const string &sep);
+LIBRAFTCORE_API string  joinStrings(const vector<string>& strs, const string &sep);
 
-const char* GetErrorString(int nErrNo);
-string entryString(const Entry& entry);
+LIBRAFTCORE_API const char* GetErrorString(int nErrNo);
+LIBRAFTCORE_API string  entryString(const Entry& entry);
 
-void copyEntries(const Message& msg, EntryVec &entries);
+LIBRAFTCORE_API void  copyEntries(const Message& msg, EntryVec &entries);
+END_C_DECLS
 
 class LIBRAFTCORE_API CRaftUtil
 {
