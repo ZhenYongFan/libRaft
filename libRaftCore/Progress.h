@@ -1,10 +1,11 @@
 #pragma once
+#include "libRaftCore.h"
 
 class CLogger;
 
 //etcd中的环形队列inflights https://blog.csdn.net/skh2015java/article/details/86716979
 ///\brief 环形队列
-struct inflights
+struct LIBRAFTCORE_API inflights
 {
     // the starting index in the buffer
     int start_;
@@ -49,7 +50,7 @@ enum ProgressState {
 
 // Progress represents a follower’s progress in the view of the leader. Leader maintains
 // progresses of all followers, and sends entries to the follower based on its progress.
-class CProgress
+class LIBRAFTCORE_API CProgress
 {
 public:
     CProgress(uint64_t u64Next, int nMaxInfilght, CLogger *pLogger);

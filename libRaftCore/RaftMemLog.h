@@ -99,15 +99,6 @@ public:
 
     virtual int InitialState(HardState &hs, ConfState &cs);
 
-    // storage contains all stable entries since the last snapshot.
-    CStorage *m_pStorage;
-
-    // unstable contains all unstable entries and snapshot.
-    // they will be saved into storage.
-    CUnstableLog m_unstablePart;
-
-    CLogger *m_pLogger;
-
     CRaftMemLog(CStorage *pStorage, CLogger *pLogger);
 
     virtual ~CRaftMemLog(void);
@@ -130,4 +121,13 @@ public:
     
     ///\brief 检查日志边界的合法性
     int CheckOutOfBounds(uint64_t u64Low, uint64_t u64High);
+public:
+    // storage contains all stable entries since the last snapshot.
+    CStorage *m_pStorage;
+
+    // unstable contains all unstable entries and snapshot.
+    // they will be saved into storage.
+    CUnstableLog m_unstablePart;
+
+    CLogger *m_pLogger;
 };

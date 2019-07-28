@@ -3,6 +3,10 @@
 #include "libRaftCore.h"
 #include "RaftDef.h"
 
+class CRaftMemLog;
+class CStorage;
+class CLogger;
+
 BEGIN_C_DECLS
 LIBRAFTCORE_API void limitSize(uint64_t maxSize, EntryVec &entries);
 
@@ -21,13 +25,17 @@ LIBRAFTCORE_API bool IsLocalMessage(const MessageType typeMsg);
 LIBRAFTCORE_API bool IsResponseMessage(const MessageType typeMsg);
 
 // string util
-LIBRAFTCORE_API string  joinStrings(const vector<string>& strs, const string &sep);
 
 LIBRAFTCORE_API const char* GetErrorString(int nErrNo);
-LIBRAFTCORE_API string  entryString(const Entry& entry);
 
 LIBRAFTCORE_API void  copyEntries(const Message& msg, EntryVec &entries);
+
+LIBRAFTCORE_API CRaftMemLog* newLog(CStorage *pStorage, CLogger *pLogger);
+
 END_C_DECLS
+
+LIBRAFTCORE_API std::string  joinStrings(const vector<string>& strs, const string &sep);
+LIBRAFTCORE_API std::string  entryString(const Entry& entry);
 
 class LIBRAFTCORE_API CRaftUtil
 {

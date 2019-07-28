@@ -48,6 +48,15 @@
     <ClInclude Include="TestEventBaseFixtrue.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="TestMemStorageFixture.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TestProgressFixture.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TestRaftLogFixture.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TestRaft.cpp">
@@ -72,6 +81,15 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="TestEventBaseFixtrue.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TestMemStorageFixture.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TestProgressFixture.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TestRaftLogFixture.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

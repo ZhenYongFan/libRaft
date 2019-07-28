@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include <string>
 #include "RaftUtil.h"
+#include "RaftMemLog.h"
 
 using namespace std;
 
@@ -74,7 +75,7 @@ void limitSize(uint64_t maxSize, EntryVec &entries) {
   }
 
   int limit;
-  int num = entries.size();
+  int num = static_cast<int>(entries.size());
   uint64_t size = entries[0].ByteSize();
   for (limit = 1; limit < num; ++limit) {
     size += entries[limit].ByteSize();
@@ -244,4 +245,29 @@ const char* CRaftUtil::MsgType2String(int typeMsg)
         return pstrTypeString[typeMsg];
     else
         return "unknown msg";
+}
+
+// newLog returns log using the given storage. It recovers the log to the state
+// that it just commits and applies the latest snapshot.
+CRaftMemLog* newLog(CStorage *pStorage, CLogger *pLogger)
+{
+    CRaftMemLog *log = new CRaftMemLog(pStorage, pLogger);
+
+    uint64_t firstIndex, lastIndex;
+    int err = pStorage->FirstIndex(firstIndex);
+    if (!SUCCESS(err))
+        pLogger->Fatalf(__FILE__, __LINE__, "get first index err:%s", GetErrorString(err));
+
+    err = pStorage->LastIndex(lastIndex);
+    if (!SUCCESS(err))
+        pLogger->Fatalf(__FILE__, __LINE__, "get last index err:%s", GetErrorString(err));
+
+    log->m_unstablePart.m_u64Offset = lastIndex + 1;
+    log->m_unstablePart.m_pLogger = pLogger;
+
+    // Initialize our committed and applied pointers to the time of the last compaction.
+    log->m_pStorage->m_u64Committed = firstIndex - 1;
+    log->m_pStorage->m_u64Applied = firstIndex - 1;
+
+    return log;
 }
