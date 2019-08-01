@@ -3,11 +3,16 @@
 #include "RaftDef.h"
 #include "RaftStorage.h"
 
-class LIBRAFTCORE_API CRaftMemStorage :public CStorage
+///\brief 用内存保存Raft日志的稳定部分，对应CUnstableLog
+class LIBRAFTCORE_API CRaftMemStorage :public CRaftStorage
 {
 public:
+    ///\brief 构造函数
+    ///\param pLogger 用于输出日志的对象
     CRaftMemStorage(CLogger *pLogger);
-    virtual ~CRaftMemStorage();
+
+    ///\brief 析构函数
+    virtual ~CRaftMemStorage(void);
 
     int FirstIndex(uint64_t &u64Index);
     int LastIndex(uint64_t &u64Index);

@@ -7,35 +7,35 @@ class CLogger;
 ///\brief 环形队列
 struct LIBRAFTCORE_API inflights
 {
-    // the starting index in the buffer
+    ///\brief the starting index in the buffer
     int start_;
 
-    // number of inflights in the buffer
+    ///\brief number of inflights in the buffer
     int count_;
 
-    // the size of the buffer
+    ///\brief the size of the buffer
     int size_;
 
-    // buffer contains the index of the last entry
-    // inside one message.
+    ///\brief buffer contains the index of the last entry inside one message.
     std::vector<uint64_t> buffer_;
-
+   
+    ///\brief 日志输出器
     CLogger* logger_;
 
     void add(uint64_t infight);
     void growBuf(void);
     void freeTo(uint64_t to);
-    void freeFirstOne();
-    bool full();
-    void reset();
+    void freeFirstOne(void);
+    bool full(void);
+    void reset(void);
 
-    inflights(int size, CLogger *logger)
+    inflights(int nSize, CLogger *logger)
         : start_(0),
         count_(0),
-        size_(size),
+        size_(nSize),
         logger_(logger)
     {
-        buffer_.resize(size);
+        buffer_.resize(nSize);
     }
     ~inflights()
     {
@@ -48,12 +48,15 @@ enum ProgressState {
   ProgressStateSnapshot  = 2  ///< 表示Leader节点正在向目标节点发送快照数据
 };
 
-// Progress represents a follower’s progress in the view of the leader. Leader maintains
-// progresses of all followers, and sends entries to the follower based on its progress.
+///\brief 追随者日志同步的进度，由Leader负责维护，根据进度向Follower发送日志对象
 class LIBRAFTCORE_API CProgress
 {
 public:
+    ///\brief 构造函数
     CProgress(uint64_t u64Next, int nMaxInfilght, CLogger *pLogger);
+
+    ///\brief 析构函数
+    ///\attention 为了效率，此处不是虚函数呀
     ~CProgress(void);
     
     const char* stateString();

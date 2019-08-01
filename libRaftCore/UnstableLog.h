@@ -9,7 +9,7 @@
 //然后再由其内部状态机将unstable维护的日志项交给上层应用，
 //由应用负责将这些日志项进行持久化并转发至系统其它节点。
 //这也是为什么它被称为unstable的原因：
-//在unstable中的日志项都是不安全的，尚未持久化存储，可能会因意外而丢失。
+///\attention 在unstable中的日志项都是不安全的，尚未持久化存储，可能会因意外而丢失。
 // unstable.entries[i] has raft log position i+unstable.offset.
 // Note that unstable.offset may be less than the highest log
 // position in storage; this means that the next write to storage

@@ -27,7 +27,7 @@ public:
     };
 
 public:
-    CRaft(const CRaftConfig &cfgNode, CRaftLog *pRaftLog, CRaftQueue *pMsgQueue, CRaftQueue *pIoQueue, CLogger *pLogger);
+    CRaft(CRaftConfig *pConfig, CRaftLog *pRaftLog, CRaftQueue *pMsgQueue, CRaftQueue *pIoQueue, CLogger *pLogger);
     
     ///\brief 析构函数
     virtual ~CRaft(void);
@@ -45,6 +45,35 @@ public:
     
     ///\brief 处理消息
     virtual int  Step(const Message& msg);
+
+public: // for test
+    
+    ///\brief 变化角色（状态）
+    void BecomeFollower(uint64_t u64Term, uint32_t nLeaderID);
+    void BecomeCandidate(void);
+    void BecomePreCandidate(void);
+    void BecomeLeader(void);
+
+    ///\brief 广播日志
+    void BcastAppend(void);
+
+    ///\brief 取得当前状态
+    inline EStateType GetState(void)
+    {
+        return m_stateRaft;
+    }
+
+    ///\brief 取得当前任期
+    inline uint64_t GetTerm(void)
+    {
+        return m_u64Term;
+    }
+
+    ///\brief 取得日志对象
+    inline CRaftLog *GetLog(void)
+    {
+        return m_pRaftLog;
+    }
 
 protected:
 
@@ -69,20 +98,12 @@ protected:
     ///\brief 非代理写的Follower提交日志后，发起Apply日志的工作
     void SendApplyReady(uint64_t u64ApplyTo);
 
-    ///\brief 广播日志
-    void BcastAppend(void);
     void SendAppend(uint32_t nToID);
 
     ///\brief 广播心跳
     void BcastHeartbeat(void);
     void BcastHeartbeatWithCtx(const string &strContext);
     void SendHeartbeat(uint32_t nToID, const string &strContext);
-
-    ///\brief 变化角色（状态）
-    void BecomeFollower(uint64_t u64Term, uint32_t nLeaderID);
-    void BecomeCandidate(void);
-    void BecomePreCandidate(void);
-    void BecomeLeader(void);
 
     ///\brief 角色变化时（除变为预选）重置相关属性
     ///\param u64Term 新的任期号
@@ -232,7 +253,7 @@ public:
 
     CLogger* m_pLogger;     ///< 日志输入对象
 
-    CRaftConfig m_cfgNode;  ///< 节点配置信息
+    CRaftConfig *m_pConfig;  ///< 节点配置信息
 
     CRaftLog *m_pRaftLog;   ///< Raft算法的日志数据管理器
 };

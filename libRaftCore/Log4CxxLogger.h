@@ -6,7 +6,7 @@
 #include <log4cxx/logger.h>
 #include <log4cxx/level.h>
 
-///\brief 采用log4cxx的日志输出
+///\brief 采用log4cxx的日志输出器
 class LIBRAFTCORE_API CLog4CxxLogger :public CLogger
 {
 public:
@@ -17,15 +17,41 @@ public:
     virtual ~CLog4CxxLogger(void);
 
     ///\brief 设置Log4Cxx对象
+    ///\param logger Log4Cxx对象
     void SetLogger(log4cxx::LoggerPtr logger);
 
     ///\brief 取得当前的Log4Cxx对象
     log4cxx::LoggerPtr & GetLogger(void);
 
+    ///\brief 输出Debug级别日志
+    ///\param pstrFileName 对应的文件名
+    ///\param nLineNo 对应的行号
+    ///\param pstrFormat 日志格式化参数
     virtual void Debugf(const char *pstrFileName, int nLineNo, const char *pstrFormat, ...);
+
+    ///\brief 输出Info级别日志
+    ///\param pstrFileName 对应的文件名
+    ///\param nLineNo 对应的行号
+    ///\param pstrFormat 日志格式化参数
     virtual void Infof(const char *pstrFileName, int nLineNo, const char *pstrFormat, ...);
+
+    ///\brief 输出Warning级别日志
+    ///\param pstrFileName 对应的文件名
+    ///\param nLineNo 对应的行号
+    ///\param pstrFormat 日志格式化参数
     virtual void Warningf(const char *pstrFileName, int nLineNo, const char *pstrFormat, ...);
+
+    ///\brief 输出Error级别日志
+    ///\param pstrFileName 对应的文件名
+    ///\param nLineNo 对应的行号
+    ///\param pstrFormat 日志格式化参数
     virtual void Errorf(const char *pstrFileName, int nLineNo, const char *pstrFormat, ...);
+
+    ///\brief 输出Fatal级别日志
+    ///\param pstrFileName 对应的文件名
+    ///\param nLineNo 对应的行号
+    ///\param pstrFormat 日志格式化参数
+    ///\attention 一般此时会打出栈信息后退出
     virtual void Fatalf(const char *pstrFileName, int nLineNo, const char *pstrFormat, ...);
 
     ///\brief 设置日志等级

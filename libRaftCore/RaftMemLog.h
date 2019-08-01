@@ -99,7 +99,7 @@ public:
 
     virtual int InitialState(HardState &hs, ConfState &cs);
 
-    CRaftMemLog(CStorage *pStorage, CLogger *pLogger);
+    CRaftMemLog(CRaftStorage *pStorage, CLogger *pLogger);
 
     virtual ~CRaftMemLog(void);
 
@@ -123,7 +123,7 @@ public:
     int CheckOutOfBounds(uint64_t u64Low, uint64_t u64High);
 public:
     // storage contains all stable entries since the last snapshot.
-    CStorage *m_pStorage;
+    CRaftStorage *m_pStorage;
 
     // unstable contains all unstable entries and snapshot.
     // they will be saved into storage.

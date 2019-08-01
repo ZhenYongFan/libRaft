@@ -4,7 +4,7 @@
 #include "RaftDef.h"
 
 class CRaftMemLog;
-class CStorage;
+class CRaftStorage;
 class CLogger;
 
 BEGIN_C_DECLS
@@ -30,19 +30,23 @@ LIBRAFTCORE_API const char* GetErrorString(int nErrNo);
 
 LIBRAFTCORE_API void  copyEntries(const Message& msg, EntryVec &entries);
 
-LIBRAFTCORE_API CRaftMemLog* newLog(CStorage *pStorage, CLogger *pLogger);
+LIBRAFTCORE_API CRaftMemLog* newLog(CRaftStorage *pStorage, CLogger *pLogger);
 
 END_C_DECLS
 
 LIBRAFTCORE_API std::string  joinStrings(const vector<string>& strs, const string &sep);
 LIBRAFTCORE_API std::string  entryString(const Entry& entry);
 
+///\brief 一组用于Raft算法的函数组成的工具类
 class LIBRAFTCORE_API CRaftUtil
 {
 public:
+    ///\brief 得到对应Message类型的Messge名称
+    ///\param typeMsg Message类型
+    ///\return Messge名称
     static const char* MsgType2String(int typeMsg);
 private:
-    ///\brief 缺省构造
+    ///\brief 禁用的缺省构造
     CRaftUtil(void)
     {
     }

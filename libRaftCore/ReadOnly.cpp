@@ -1,5 +1,9 @@
 #include "stdafx.h"
+#include "RaftConfig.h"
+#include "RaftLogger.h"
 #include "ReadOnly.h"
+#include "raft.pb.h"
+using namespace raftpb;
 
 CReadOnly::CReadOnly(ReadOnlyOption optMode, CLogger *pLogger)
     : m_optMode(optMode),
@@ -11,13 +15,9 @@ CReadOnly::~CReadOnly(void)
 {
     for (auto iter : m_mapPendingReadIndex)
         delete iter.second;
+    m_mapPendingReadIndex.clear();
 }
 
-// AddRequest记录读请求，保存已提交的位置以及MsgReadIndex消息
-// 1.获取消息ID，在ReadIndex消息的第一个记录中记录了消息ID
-// 2.判断该消息是否已经记录在pendingReadIndex中，如果已存在则直接返回
-// 3.如果不存在，则维护到pendingReadIndex中，index是当前Leader已提交的位置，m是请求的消息
-// 4.并将消息ID追加到readIndexQueue队列中
 void CReadOnly::AddRequest(uint64_t u64Committed, Message *pMsgRead)
 {
     //读请求信息中加入Client、Session信息组成唯一标识
@@ -60,8 +60,6 @@ void CReadOnly::Advance(const Message& msgRead, vector<CReadIndexStatus*> *rss)
         auto iterIndex = m_mapPendingReadIndex.find(*iter);
         if (iterIndex == m_mapPendingReadIndex.end())
             m_pLogger->Fatalf(__FILE__, __LINE__, "cannot find corresponding read state from pending map");
-
-        CReadIndexStatus* rs = iterIndex->second;
         rss->push_back(iterIndex->second);
         
         if (strContext == *iter)
@@ -79,7 +77,7 @@ void CReadOnly::Advance(const Message& msgRead, vector<CReadIndexStatus*> *rss)
 // lastPendingRequestCtx returns the context of the last pending read only
 // request in readonly struct.
 //返回记录中最后一个消息ID
-string CReadOnly::LastPendingRequestCtx()
+string CReadOnly::LastPendingRequestCtx(void)
 {
     if (m_listRead.empty())
         return "";

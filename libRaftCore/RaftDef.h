@@ -12,16 +12,20 @@ using namespace raftpb;
 const static uint32_t None = 0;
 const static uint64_t noLimit = ULONG_MAX;
 
+///\brief 日志操作的错误号 
 enum ErrorCode
 {
-    OK = 0,
+    OK = 0,                 ///< 成功
     ErrCompacted = 1,       ///< 企图读取已经被压缩后的数据
-    ErrSnapOutOfDate = 2, 
-    ErrUnavailable = 3,     ///< 企图读取索引号还没有过的数据
+    ErrSnapOutOfDate = 2,   ///< 企图读取过期数据
+    ErrUnavailable = 3,     ///< 企图读取索引号还没有过来的数据
     ErrSnapshotTemporarilyUnavailable = 4,
     ErrSeriaFail = 5
 };
 
+///\brief 检查错误号是否为成功
+///\param nErrorNo 错误号
+///\return 成功标志 true 成功；false 失败
 inline bool SUCCESS(int nErrorNo)
 {
     return nErrorNo == OK;
@@ -30,11 +34,11 @@ inline bool SUCCESS(int nErrorNo)
 ///\brief Raft状态机枚举值的定义
 enum EStateType
 {
-    eStateFollower = 0,
-    eStateCandidate = 1,
-    eStateLeader = 2,
-    eStatePreCandidate = 3,
-    numStates
+    eStateFollower = 0,     ///< 追随者
+    eStateCandidate = 1,    ///< 备选
+    eStateLeader = 2,       ///< 领导者
+    eStatePreCandidate = 3, ///< 预选者
+    numStates               ///< 边界值
 };
 
 ///\brief 节点"软"状态，无需持久化
@@ -52,16 +56,15 @@ public:
     EStateType m_stateRaft; ///< 当前状态（领导者，追随者，竞选者，备选者） 
 };
 
-// ReadState provides state for read only query.
-// It's caller's responsibility to call ReadIndex first before getting
-// this state from ready, It's also caller's duty to differentiate if this
-// state is what it requests through RequestCtx, eg. given a unique id as
-// RequestCtx
+///\brief 提供IO操作的请求，用于ReadOnly队列和写操作队列，有唯一标识标识读写操作
 class CReadState
 {
 public:
-    uint64_t m_u64Index;
-    string   m_strRequestCtx;
+    uint64_t m_u64Index;      ///< 对应请求时刻的提交日志号
+    string   m_strRequestCtx; ///< 字符串类型的请求对象，也作为唯一标识
+    ///\brief 构造函数
+    ///\param u64Index 对应请求时刻的提交日志号
+    ///\param strRequestCtx  字符串类型的请求对象，也作为唯一标识
     CReadState(uint64_t u64Index, const string &strRequestCtx)
         : m_u64Index(u64Index),
         m_strRequestCtx(strRequestCtx)
@@ -81,15 +84,19 @@ public:
         m_pOperation = NULL;
     }
 
+    ///\brief 析构函数
     ~CLogOperation(void)
     {
         if (NULL != m_pOperation)
+        {
             delete m_pOperation;
+            m_pOperation = NULL;
+        }
     }
 public:
-    uint32_t m_nType;        ///< 操作类型 0: 读操作; 1:写操作，将执行本请求中的写操作且修改应用日志号; 2: 应用日志，读取日志，修改状态机，修改应用日志号
+    uint32_t m_nType;         ///< 操作类型 0: 读操作; 1:写操作，将执行本请求中的写操作且修改应用日志号; 2: 应用日志，读取日志，修改状态机，修改应用日志号
     CReadState *m_pOperation; ///< 读操作 或者写操作
-    uint64_t m_u64ApplyTo;   ///< 即将应用到的日志号
+    uint64_t m_u64ApplyTo;    ///< 即将应用到的日志号
 };
 
 typedef vector<Entry> EntryVec;

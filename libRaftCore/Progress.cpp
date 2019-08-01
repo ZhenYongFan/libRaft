@@ -241,17 +241,17 @@ void inflights::freeTo(uint64_t to)
     }
 }
 
-void inflights::freeFirstOne()
+void inflights::freeFirstOne(void)
 {
     freeTo(buffer_[start_]);
 }
 
-bool inflights::full()
+bool inflights::full(void)
 {
     return count_ == size_;
 }
 
-void inflights::reset()
+void inflights::reset(void)
 {
     count_ = 0;
     start_ = 0;

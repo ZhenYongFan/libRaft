@@ -18,7 +18,7 @@ public:
     unsigned short m_nPeerPort;  ///< 与兄弟节点交互的端口号
 };
 
-///\brief 配置
+///\brief 当前Raft状态机的配置
 class LIBRAFTCORE_API CRaftConfig
 {
 public:
@@ -34,6 +34,7 @@ public:
     bool Validate(std::string &strErrMsg) const;
 
     ///\brief 取得所有节点的ID
+    ///\param peers 取回的节点ID
     void GetPeers(std::vector<uint32_t> &peers) const;
 
     ///\brief 取得本节点配置信息

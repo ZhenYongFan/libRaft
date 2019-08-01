@@ -3,6 +3,7 @@
 #include "libRaftCore.h"
 #include "RaftDef.h"
 
+///\brief Raft算法中的日志，类似WAL
 class LIBRAFTCORE_API CRaftLog
 {
 public:

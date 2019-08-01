@@ -2,16 +2,19 @@
 #include "libRaftCore.h"
 #include "RaftDef.h"
 
-class LIBRAFTCORE_API CStorage
+///\brief 保存Raft日志的稳定部分，对应CUnstableLog
+class LIBRAFTCORE_API CRaftStorage
 {
 public:
-    CStorage(void)
+    ///\brief 构造函数
+    CRaftStorage(void)
     {
         m_u64Committed = 0;
         m_u64Applied = 0;
     };
 
-    virtual ~CStorage(void)
+    ///\brief 析构函数
+    virtual ~CRaftStorage(void)
     {
     }
 

@@ -10,7 +10,7 @@ namespace raftpb
 };
 
 ///\brief 采用RocksDB实现日志的持久化存储
-class LIBRAFTCORE_API CRocksDbStorage : public CStorage
+class LIBRAFTCORE_API CRocksDbStorage : public CRaftStorage
 {
 public:
     ///\brief 构造函数

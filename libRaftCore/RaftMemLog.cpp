@@ -3,7 +3,7 @@
 #include "RaftMemLog.h"
 #include "RaftUtil.h"
 
-CRaftMemLog::CRaftMemLog(CStorage *pStorage, CLogger *pLogger)
+CRaftMemLog::CRaftMemLog(CRaftStorage *pStorage, CLogger *pLogger)
     : m_pStorage(pStorage),
     m_unstablePart(pLogger),
     m_pLogger(pLogger)

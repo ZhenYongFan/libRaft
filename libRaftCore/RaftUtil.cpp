@@ -249,7 +249,7 @@ const char* CRaftUtil::MsgType2String(int typeMsg)
 
 // newLog returns log using the given storage. It recovers the log to the state
 // that it just commits and applies the latest snapshot.
-CRaftMemLog* newLog(CStorage *pStorage, CLogger *pLogger)
+CRaftMemLog* newLog(CRaftStorage *pStorage, CLogger *pLogger)
 {
     CRaftMemLog *log = new CRaftMemLog(pStorage, pLogger);
 
