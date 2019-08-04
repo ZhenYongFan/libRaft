@@ -31,7 +31,7 @@ public:
     ///\brief 析构函数
     ~CRaftSemaphore(void);
 
-    ///\brief 产生
+    ///\brief 创建信号灯
     ///\param nInitValue 初始值
     ///\return true 成功 false 失败
     bool Create(int nInitValue);
@@ -51,6 +51,6 @@ protected:
 #ifdef _WIN64
     HANDLE m_hSem;   ///< 信号量句柄
 #else
-    sem_t *m_hSem;    ///< 信号量
+    sem_t *m_hSem;   ///< 信号量
 #endif
 };

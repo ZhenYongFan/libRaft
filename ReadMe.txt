@@ -12,3 +12,10 @@
 开发环境： Windows7 + vs2015
 调试运行环境： Windows7，Centos 7.6
 C++：支持C++11
+
+4、在https://github.com/lichuang/libraft 基础上主要的工作
+修改代码风格
+添加中文注释
+将gtest框架替换为cppunit，因为我的IDE不支持gtest的类与方法的解析
+添加KV服务的实现
+（即将）添加锁服务的实现

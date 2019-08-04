@@ -1,4 +1,7 @@
 #include "stdafx.h"
+#include "raft.pb.h"
+using namespace raftpb;
+
 #include "UnstableLog.h"
 
 // maybeFirstIndex returns the index of the first possible entry in entries

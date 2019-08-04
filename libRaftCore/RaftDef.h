@@ -4,10 +4,7 @@
 #include <climits>
 #include <string>
 #include <vector>
-#include "raft.pb.h"
-
 using namespace std;
-using namespace raftpb;
 
 const static uint32_t None = 0;
 const static uint64_t noLimit = ULONG_MAX;

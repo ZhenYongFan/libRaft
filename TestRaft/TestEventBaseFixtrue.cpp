@@ -30,6 +30,7 @@ void CTestEventBaseFixtrue::tearDown(void)
 
 void CTestEventBaseFixtrue::TestExample(void)
 {
+#if 0
     CEventBase base;
     CPPUNIT_ASSERT(0 == base.GetState());
     bool bInit = base.Init();
@@ -57,4 +58,5 @@ void CTestEventBaseFixtrue::TestExample(void)
     CPPUNIT_ASSERT(4 == base.GetState());
     base.Uninit();
     CPPUNIT_ASSERT(0 == base.GetState());
+#endif
 }

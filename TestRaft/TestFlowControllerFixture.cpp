@@ -1,20 +1,12 @@
 #include "stdafx.h"
-#include "TestFlowControllerFixture.h"
-#include "NullLogger.h"
-extern CNullLogger kDefaultLogger;
-#include "TestRaftFrame.h"
+#include "raft.pb.h"
+using namespace raftpb;
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
 
-CRaftFrame* newTestRaft(uint64_t id, const vector<uint64_t>& peers, int election, int hb)
-{
-    std::string strErrMsg;
-    CRaftFrame *pFrame = new CRaftFrame();
-    if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, strErrMsg))
-    {
-        delete pFrame;
-        pFrame = NULL;
-    }
-    return pFrame;
-}
+#include "TestFlowControllerFixture.h"
+#include "TestRaftFrame.h"
 
 CPPUNIT_TEST_SUITE_REGISTRATION(CTestFlowControllerFixture);
 
@@ -38,7 +30,7 @@ void CTestFlowControllerFixture::tearDown(void)
 
 void CTestFlowControllerFixture::TestBase(void)
 {
-    vector<uint64_t> peers;
+    vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
 
@@ -53,7 +45,7 @@ void CTestFlowControllerFixture::TestBase(void)
 // 2. when the window is full, no more msgApp can be sent.
 void CTestFlowControllerFixture::TestMsgAppFlowControlFull(void)
 {
-    vector<uint64_t> peers;
+    vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
 
@@ -88,7 +80,7 @@ void CTestFlowControllerFixture::TestMsgAppFlowControlFull(void)
     }
 
     // ensure 1
-    CPPUNIT_ASSERT(pr2->ins_.full());
+    CPPUNIT_ASSERT(pr2->ins_.IsFull());
 
     // ensure 2
     for (i = 0; i < 10; ++i)
@@ -120,7 +112,7 @@ void CTestFlowControllerFixture::TestMsgAppFlowControlFull(void)
 // 2. out-of-dated msgAppResp has no effect on the sliding window.
 void CTestFlowControllerFixture::TestMsgAppFlowControlMoveForward(void)
 {
-    vector<uint64_t> peers;
+    vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
     CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
@@ -183,7 +175,7 @@ void CTestFlowControllerFixture::TestMsgAppFlowControlMoveForward(void)
         CPPUNIT_ASSERT(msgs.size()== 1);
         pFrame->FreeMessages(msgs);
         // ensure 1
-        CPPUNIT_ASSERT(pr2->ins_.full());
+        CPPUNIT_ASSERT(pr2->ins_.IsFull());
 
         // ensure 2
         int j;
@@ -199,7 +191,7 @@ void CTestFlowControllerFixture::TestMsgAppFlowControlMoveForward(void)
                 r->Step(msg);
             }
 
-            CPPUNIT_ASSERT(pr2->ins_.full());
+            CPPUNIT_ASSERT(pr2->ins_.IsFull());
         }
     }
     pFrame->Uninit();
@@ -210,7 +202,7 @@ void CTestFlowControllerFixture::TestMsgAppFlowControlMoveForward(void)
 // frees one slot if the window is full.
 void CTestFlowControllerFixture::TestMsgAppFlowControlRecvHeartbeat(void)
 {
-    vector<uint64_t> peers;
+    vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
     CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
@@ -243,7 +235,7 @@ void CTestFlowControllerFixture::TestMsgAppFlowControlRecvHeartbeat(void)
 
     for (i = 1; i < 5; ++i)
     {
-        CPPUNIT_ASSERT(pr2->ins_.full());
+        CPPUNIT_ASSERT(pr2->ins_.IsFull());
 
         // recv tt msgHeartbeatResp and expect one free slot
         int j;
@@ -259,7 +251,7 @@ void CTestFlowControllerFixture::TestMsgAppFlowControlRecvHeartbeat(void)
             }
             vector<Message*> msgs;
             pFrame->ReadMessages(msgs);
-            CPPUNIT_ASSERT(!(pr2->ins_.full()));
+            CPPUNIT_ASSERT(!(pr2->ins_.IsFull()));
             pFrame->FreeMessages(msgs);
         }
 

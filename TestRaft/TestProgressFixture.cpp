@@ -1,4 +1,10 @@
 #include "stdafx.h"
+#include "raft.pb.h"
+using namespace raftpb;
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
+
 #include "TestProgressFixture.h"
 #include "Progress.h"
 #include "NullLogger.h"
@@ -26,9 +32,9 @@ void CTestProgressFixture::tearDown(void)
 
 bool deepEqualInflights(const inflights& in1, const inflights& in2)
 {
-    CPPUNIT_ASSERT_EQUAL(in1.start_, in2.start_);
-    CPPUNIT_ASSERT_EQUAL(in1.count_, in2.count_);
-    CPPUNIT_ASSERT_EQUAL(in1.size_, in2.size_);
+    CPPUNIT_ASSERT_EQUAL(in1.m_nStartPos, in2.m_nStartPos);
+    CPPUNIT_ASSERT_EQUAL(in1.m_nCount, in2.m_nCount);
+    CPPUNIT_ASSERT_EQUAL(in1.m_nSize, in2.m_nSize);
     CPPUNIT_ASSERT_EQUAL(in1.buffer_.size(), in2.buffer_.size());
     int i = 0;
     for (i = 0; i < in1.buffer_.size(); ++i)
@@ -46,14 +52,14 @@ void CTestProgressFixture::TestInflightsAdd(void)
 
     for (i = 0; i < 5; ++i)
     {
-        ins.add(i);
+        ins.Add(i);
     }
 
     {
         inflights wantIns(10, &kDefaultLogger);
-        wantIns.start_ = 0;
-        wantIns.count_ = 5;
-        wantIns.size_ = 10;
+        wantIns.m_nStartPos = 0;
+        wantIns.m_nCount = 5;
+        wantIns.m_nSize = 10;
         wantIns.buffer_[0] = 0;
         wantIns.buffer_[1] = 1;
         wantIns.buffer_[2] = 2;
@@ -71,14 +77,14 @@ void CTestProgressFixture::TestInflightsAdd(void)
 
     for (i = 5; i < 10; ++i)
     {
-        ins.add(i);
+        ins.Add(i);
     }
 
     {
         inflights wantIns(10, &kDefaultLogger);
-        wantIns.start_ = 0;
-        wantIns.count_ = 10;
-        wantIns.size_ = 10;
+        wantIns.m_nStartPos = 0;
+        wantIns.m_nCount = 10;
+        wantIns.m_nSize = 10;
         wantIns.buffer_[0] = 0;
         wantIns.buffer_[1] = 1;
         wantIns.buffer_[2] = 2;
@@ -96,17 +102,17 @@ void CTestProgressFixture::TestInflightsAdd(void)
 
     // rotating case
     inflights ins2(10, &kDefaultLogger);
-    ins2.start_ = 5;
+    ins2.m_nStartPos = 5;
 
     for (i = 0; i < 5; ++i)
     {
-        ins2.add(i);
+        ins2.Add(i);
     }
     {
         inflights wantIns(10, &kDefaultLogger);
-        wantIns.start_ = 5;
-        wantIns.count_ = 5;
-        wantIns.size_ = 10;
+        wantIns.m_nStartPos = 5;
+        wantIns.m_nCount = 5;
+        wantIns.m_nSize = 10;
         wantIns.buffer_[0] = 0;
         wantIns.buffer_[1] = 0;
         wantIns.buffer_[2] = 0;
@@ -123,13 +129,13 @@ void CTestProgressFixture::TestInflightsAdd(void)
     }
     for (i = 5; i < 10; ++i)
     {
-        ins2.add(i);
+        ins2.Add(i);
     }
     {
         inflights wantIns(10, &kDefaultLogger);
-        wantIns.start_ = 5;
-        wantIns.count_ = 10;
-        wantIns.size_ = 10;
+        wantIns.m_nStartPos = 5;
+        wantIns.m_nCount = 10;
+        wantIns.m_nSize = 10;
         wantIns.buffer_[0] = 5;
         wantIns.buffer_[1] = 6;
         wantIns.buffer_[2] = 7;
@@ -153,15 +159,15 @@ void CTestProgressFixture::TestInflightFreeTo(void)
 
     for (i = 0; i < 10; ++i)
     {
-        ins.add(i);
+        ins.Add(i);
     }
 
     ins.freeTo(4);
     {
         inflights wantIns(10, &kDefaultLogger);
-        wantIns.start_ = 5;
-        wantIns.count_ = 5;
-        wantIns.size_ = 10;
+        wantIns.m_nStartPos = 5;
+        wantIns.m_nCount = 5;
+        wantIns.m_nSize = 10;
         wantIns.buffer_[0] = 0;
         wantIns.buffer_[1] = 1;
         wantIns.buffer_[2] = 2;
@@ -180,9 +186,9 @@ void CTestProgressFixture::TestInflightFreeTo(void)
     ins.freeTo(8);
     {
         inflights wantIns(10, &kDefaultLogger);
-        wantIns.start_ = 9;
-        wantIns.count_ = 1;
-        wantIns.size_ = 10;
+        wantIns.m_nStartPos = 9;
+        wantIns.m_nCount = 1;
+        wantIns.m_nSize = 10;
         wantIns.buffer_[0] = 0;
         wantIns.buffer_[1] = 1;
         wantIns.buffer_[2] = 2;
@@ -201,14 +207,14 @@ void CTestProgressFixture::TestInflightFreeTo(void)
     // rotating case
     for (i = 10; i < 15; ++i)
     {
-        ins.add(i);
+        ins.Add(i);
     }
     ins.freeTo(12);
     {
         inflights wantIns(10, &kDefaultLogger);
-        wantIns.start_ = 3;
-        wantIns.count_ = 2;
-        wantIns.size_ = 10;
+        wantIns.m_nStartPos = 3;
+        wantIns.m_nCount = 2;
+        wantIns.m_nSize = 10;
         wantIns.buffer_[0] = 10;
         wantIns.buffer_[1] = 11;
         wantIns.buffer_[2] = 12;
@@ -227,9 +233,9 @@ void CTestProgressFixture::TestInflightFreeTo(void)
     ins.freeTo(14);
     {
         inflights wantIns(10, &kDefaultLogger);
-        wantIns.start_ = 0;
-        wantIns.count_ = 0;
-        wantIns.size_ = 10;
+        wantIns.m_nStartPos = 0;
+        wantIns.m_nCount = 0;
+        wantIns.m_nSize = 10;
         wantIns.buffer_[0] = 10;
         wantIns.buffer_[1] = 11;
         wantIns.buffer_[2] = 12;
@@ -253,15 +259,15 @@ void CTestProgressFixture::TestInflightFreeFirstOne(void)
 
     for (i = 0; i < 10; ++i)
     {
-        ins.add(i);
+        ins.Add(i);
     }
 
     ins.freeFirstOne();
     {
         inflights wantIns(10, &kDefaultLogger);
-        wantIns.start_ = 1;
-        wantIns.count_ = 9;
-        wantIns.size_ = 10;
+        wantIns.m_nStartPos = 1;
+        wantIns.m_nCount = 9;
+        wantIns.m_nSize = 10;
         wantIns.buffer_[0] = 0;
         wantIns.buffer_[1] = 1;
         wantIns.buffer_[2] = 2;

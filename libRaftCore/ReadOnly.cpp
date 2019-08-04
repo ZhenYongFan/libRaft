@@ -1,9 +1,11 @@
 #include "stdafx.h"
+#include "raft.pb.h"
+using namespace raftpb;
+
 #include "RaftConfig.h"
 #include "RaftLogger.h"
 #include "ReadOnly.h"
-#include "raft.pb.h"
-using namespace raftpb;
+
 
 CReadOnly::CReadOnly(ReadOnlyOption optMode, CLogger *pLogger)
     : m_optMode(optMode),

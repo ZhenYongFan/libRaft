@@ -31,12 +31,15 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
+#include <time.h>
 
 //stl
 #include <string>
 #include <vector>
 #include <map>
 #include <list>
+#include <algorithm>
 
 //cxx11
 #include <unordered_map>

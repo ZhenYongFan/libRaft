@@ -3,7 +3,7 @@
 
 class CIoEventBase;
 
-///\brief 通过libevent建立的会话
+///\brief 通过libevent建立的会话，每个Session有一个唯一ID
 class LIBRAFTCORE_API CEventSession
 {
 public:
@@ -21,23 +21,31 @@ public:
 
     CEventSession(CIoEventBase *pIoBase, struct bufferevent *pBufferEvent,const std::string &strHost, int nPort, uint32_t nSessionID);
     
+    ///\brief 析构函数
     virtual ~CEventSession(void);
 
+    ///\brief 取得依附的Event Base对象
+    ///\return 依附的Event Base对象
     CIoEventBase *GetIoBase(void)
     {
         return m_pIoBase;
     }
 
+    ///\brief 取得内置的buffer event对象
+    ///\return 内置的buffer event对象
     struct bufferevent *GetBufferEvent(void)
     {
         return m_pBufferEvent;
     }
-    
+
+    ///\brief 取得当前状态
+    ///\brief 当前连接的状态
     EState GetState(void)
     {
         return m_eState;
     }
 
+    ///\brief 判断是否为Client，即主动连接
     bool IsClient(void)
     {
         return !m_strHost.empty();

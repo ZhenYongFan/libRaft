@@ -1,7 +1,7 @@
 #include "stdafx.h"
-#include <stdlib.h>
-#include <time.h>
-#include <algorithm>
+#include "raft.pb.h"
+using namespace raftpb;
+
 #include "Raft.h"
 #include "RaftUtil.h"
 #include "ReadOnly.h"
@@ -73,7 +73,7 @@ bool CRaft::Init(string &strErrMsg)
         snprintf(tmp, sizeof(tmp), "%u", iter->first);
         peerStrs.push_back(tmp);
     }
-    string nodeStr = joinStrings(peerStrs, ",");
+    string nodeStr = CRaftUtil::JoinStrings(peerStrs, ",");
 
     m_pLogger->Infof(__FILE__, __LINE__,
         "newRaft %lu [peers: [%s], term: %llu, commit: %llu, applied: %llu, lastindex: %llu, lastterm: %llu]",
@@ -126,6 +126,20 @@ void CRaft::SetHardState(const HardState &stateHard)
     m_pRaftLog->CommitTo(stateHard.commit());
     m_u64Term = stateHard.term();
     m_nVoteID = stateHard.vote();
+}
+
+int CRaft::CheckVoted(uint32_t nRaftID)
+{
+    int nCheck = 2;
+    auto iter = m_mapVotes.find(nRaftID);
+    if (iter != m_mapVotes.end())
+    {
+        if (iter->second)
+            nCheck = 0;
+        else
+            nCheck = 1;
+    }
+    return nCheck;
 }
 
 void CRaft::OnTick(void)
@@ -338,13 +352,13 @@ void CRaft::SendAppend(uint32_t nToID)
             case ProgressStateReplicate:
                 last = entries[entries.size() - 1].index();
                 pProgress->optimisticUpdate(last);
-                pProgress->ins_.add(last);
+                pProgress->ins_.Add(last);
                 break;
             case ProgressStateProbe:
                 pProgress->Pause();
                 break;
             default:
-                m_pLogger->Fatalf(__FILE__, __LINE__, "%x is sending append in unhandled state %s", m_pConfig->m_nRaftID, pProgress->stateString());
+                m_pLogger->Fatalf(__FILE__, __LINE__, "%x is sending append in unhandled state %s", m_pConfig->m_nRaftID, pProgress->GetStateText());
                 break;
             }
         }
@@ -361,11 +375,11 @@ void CRaft::BcastHeartbeat(void)
 
 void CRaft::BcastHeartbeatWithCtx(const string &strContext)
 {
-    for (auto iter = m_mapProgress.begin(); iter != m_mapProgress.end(); ++iter)
+    for (auto iter : m_mapProgress)
     {
         //无需向自己发送心跳消息
-        if (iter->first != m_pConfig->m_nRaftID) 
-            SendHeartbeat(iter->first, strContext);
+        if (iter.first != m_pConfig->m_nRaftID) 
+            SendHeartbeat(iter.first, strContext);
     }
 }
 
@@ -524,7 +538,7 @@ void CRaft::OnTickHeartbeat(void)
 
     if (m_nTicksElectionElapsed >= m_pConfig->m_nTicksElection)
     {
-        m_nTicksElectionElapsed = 0;  //重置选举计时器，Leader节点不会主动发起选举
+        m_nTicksElectionElapsed = 0;   //重置选举计时器，Leader节点不会主动发起选举
         if (m_pConfig->m_bCheckQuorum) //检测本选举周期内当前Leader节点是否与集群中的大多数节点连通
         {
             Message msg;
@@ -566,7 +580,6 @@ bool CRaft::PastElectionTimeout(void)
     return m_nTicksElectionElapsed >= m_nTicksRandomizedElectionTimeout;
 }
 
-//随机算法重置选举计时器
 void CRaft::ResetRandomizedElectionTimeout(void)
 {
     m_nTicksRandomizedElectionTimeout = m_pConfig->m_nTicksElection + rand() % m_pConfig->m_nTicksElection;
@@ -1046,7 +1059,7 @@ void CRaft::OnMsgProp(const Message &msg)
         {
             m_pLogger->Infof(__FILE__, __LINE__,
                 "propose conf %s ignored since pending unapplied configuration",
-                entryString(*entry).c_str());
+                CRaftUtil::EntryString(*entry).c_str());
             Entry tmp;
             tmp.set_type(EntryNormal);
             entry->CopyFrom(tmp);
@@ -1204,7 +1217,7 @@ void CRaft::OnHeartbeatResp(const Message& msg, CProgress *pProgress)
     pProgress->Resume();
 
     // free one slot for the full inflights window to allow progress.
-    if (pProgress->state_ == ProgressStateReplicate && pProgress->ins_.full())
+    if (pProgress->state_ == ProgressStateReplicate && pProgress->ins_.IsFull())
         pProgress->ins_.freeFirstOne();
     if (pProgress->m_u64MatchLogIndex < m_pRaftLog->GetLastIndex())
         SendAppend(from);
@@ -1491,9 +1504,6 @@ void CRaft::OnHeartbeat(const Message& msg)
     SendMsg(resp);
 }
 
-//1.消息的索引值小于当前节点已提交的值，则返回MsgAppResp消息类型，并返回已提交的位置
-//2.如果消息追加成功，则返回MsgAppResp消息类型，并返回最后一条记录的索引值
-//3.如果追加失败，则Reject设为true，并返回raftLog中最后一条记录的索引
 void CRaft::OnAppendEntries(const Message& msg)
 {
     Message *pRespMsg = NULL;

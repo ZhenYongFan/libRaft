@@ -1,9 +1,14 @@
 #include "stdafx.h"
+#include "raft.pb.h"
+using namespace raftpb;
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
 
 #include <vector>
 using namespace std;
+#include "RaftUtil.h"
 
-#include "raft.pb.h"
 using namespace raftpb;
 #include "NullLogger.h"
 extern CNullLogger kDefaultLogger;
@@ -130,32 +135,33 @@ Message acceptAndReply(Message *msg)
     m.set_index(msg->index() + msg->entries_size());
     return m;
 }
-#if 0
-void commitNoopEntry(CRaft *r, CRaftStorage *s)
+
+void commitNoopEntry(CRaftFrame *pFrame,CRaft *r, CRaftStorage *s)
 {
     CPPUNIT_ASSERT_EQUAL(r->GetState(), eStateLeader);
     r->BcastAppend();
     // simulate the response of MsgApp
     vector<Message*> msgs;
-    r->readMessages(&msgs);
+    pFrame->ReadMessages(msgs);
 
     int i;
     for (i = 0; i < msgs.size(); ++i)
     {
         Message *msg = msgs[i];
-        EXPECT_FALSE(msg->type() != MsgApp || msg->entries_size() != 1 || msg->entries(0).has_data());
+        CPPUNIT_ASSERT(!(msg->type() != MsgApp || msg->entries_size() != 1 || !msg->entries(0).data().empty()));
         r->Step(acceptAndReply(msg));
     }
     // ignore further messages to refresh followers' commit index
-    r->readMessages(&msgs);
+    pFrame->ReadMessages(msgs);
     CRaftMemLog *pLog = dynamic_cast<CRaftMemLog *>(r->GetLog());
     EntryVec entries;
     pLog->unstableEntries(entries);
     s->Append(entries);
     pLog->AppliedTo(r->GetLog()->GetCommitted());
     pLog->StableTo(r->GetLog()->GetLastIndex(), r->GetLog()->GetLastTerm());
+    pFrame->FreeMessages(msgs);
 }
-#endif
+
 // testUpdateTermFromMessage tests that if one server’s current term is
 // smaller than the other’s, then it updates its current term to the larger
 // value. If a candidate or leader discovers that its term is out of date,
@@ -163,7 +169,7 @@ void commitNoopEntry(CRaft *r, CRaftStorage *s)
 // Reference: section 5.1
 void testUpdateTermFromMessage(EStateType state)
 {
-    vector<uint64_t> peers;
+    vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
     peers.push_back(3);
@@ -213,43 +219,46 @@ void CTestRaftPaperFixture::TestLeaderUpdateTermFromMessage(void)
     testUpdateTermFromMessage(eStateLeader);
 }
 
-#if 0
 // TestRejectStaleTermMessage tests that if a server receives a request with
 // a stale term number, it rejects the request.
 // Our implementation ignores the request instead.
 // Reference: section 5.1
 // TODO
-void CTestRaftPaperFixture::TestRejectStaleTermMessage)
+void CTestRaftPaperFixture::TestRejectStaleTermMessage(void)
 {
 }
 
 // TestStartAsFollower tests that when servers start up, they begin as followers.
 // Reference: section 5.2
-void CTestRaftPaperFixture::TestStartAsFollower)
+void CTestRaftPaperFixture::TestStartAsFollower(void)
 {
-    vector<uint64_t> peers;
+    vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
     peers.push_back(3);
-    CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-    CRaft *r = newTestRaft(1, peers, 10, 1, s);
+
+    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CRaft *r = pFrame->m_pRaftNode;
     CPPUNIT_ASSERT_EQUAL(r->GetState(), eStateFollower);
+    pFrame->Uninit();
+    delete pFrame;
 }
 
 // TestLeaderBcastBeat tests that if the leader receives a heartbeat tick,
 // it will send a msgApp with m.Index = 0, m.LogTerm=0 and empty entries as
 // heartbeat to all followers.
 // Reference: section 5.2
-void CTestRaftPaperFixture::TestLeaderBcastBeat)
+void CTestRaftPaperFixture::TestLeaderBcastBeat(void)
 {
     // heartbeat interval
     uint64_t hi = 1;
-    vector<uint64_t> peers;
+    vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
     peers.push_back(3);
-    CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-    CRaft *r = newTestRaft(1, peers, 10, 1, s);
+
+    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CRaft *r = pFrame->m_pRaftNode;
     r->BecomeCandidate();
     r->BecomeLeader();
 
@@ -261,14 +270,15 @@ void CTestRaftPaperFixture::TestLeaderBcastBeat)
         entry.set_index(i + 1);
         entries.push_back(entry);
     }
-    r->appendEntry(&entries);
+    r->AppendEntry(entries);
 
     for (i = 0; i < hi; ++i)
     {
-        r->tick();
+        r->OnTick();
     }
     vector<Message*> msgs;
-    r->readMessages(&msgs);
+    pFrame->ReadMessages(msgs);
+
 
     vector<Message*> wmsgs;
     {
@@ -288,6 +298,10 @@ void CTestRaftPaperFixture::TestLeaderBcastBeat)
         wmsgs.push_back(msg);
     }
     CPPUNIT_ASSERT(isDeepEqualMsgs(msgs, wmsgs));
+    pFrame->FreeMessages(wmsgs);
+    pFrame->FreeMessages(msgs);
+    pFrame->Uninit();
+    delete pFrame;
 }
 
 // testNonleaderStartElection tests that if a follower receives no communication
@@ -300,36 +314,37 @@ void CTestRaftPaperFixture::TestLeaderBcastBeat)
 // start a new election by incrementing its term and initiating another
 // round of RequestVote RPCs.
 // Reference: section 5.2
-void testNonleaderStartElection(StateType state)
+void testNonleaderStartElection(EStateType state)
 {
     // election timeout
     uint64_t et = 10;
-    vector<uint64_t> peers;
+    vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
     peers.push_back(3);
-    CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-    CRaft *r = newTestRaft(1, peers, 10, 1, s);
 
+    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CRaft *r = pFrame->m_pRaftNode;
     switch (state)
     {
     case eStateFollower:
         r->BecomeFollower(1, 2);
         break;
-    case StateCandidate:
+    case eStateCandidate:
         r->BecomeCandidate();
         break;
     }
     int i;
     for (i = 0; i < 2 * et; ++i)
     {
-        r->tick();
+        r->OnTick();
     }
-    CPPUNIT_ASSERT_EQUAL(r->GetTerm(), 2);
-    CPPUNIT_ASSERT_EQUAL(r->GetState(), StateCandidate);
-    CPPUNIT_ASSERT(r->votes_[r->id_]);
+    CPPUNIT_ASSERT(r->GetTerm() == 2);
+    CPPUNIT_ASSERT(r->GetState() == eStateCandidate);
+    CPPUNIT_ASSERT(0 == r->CheckVoted(r->m_pConfig->m_nRaftID));
+
     vector<Message*> msgs;
-    r->readMessages(&msgs);
+    pFrame->ReadMessages(msgs);
 
     vector<Message*> wmsgs;
     {
@@ -349,15 +364,19 @@ void testNonleaderStartElection(StateType state)
         wmsgs.push_back(msg);
     }
     CPPUNIT_ASSERT(isDeepEqualMsgs(msgs, wmsgs));
+    pFrame->FreeMessages(wmsgs);
+    pFrame->FreeMessages(msgs);
+    pFrame->Uninit();
+    delete pFrame;
 }
 
-void CTestRaftPaperFixture::TestFollowerStartElection)
+void CTestRaftPaperFixture::TestFollowerStartElection(void)
 {
     testNonleaderStartElection(eStateFollower);
 }
-void CTestRaftPaperFixture::TestCandidateStartNewElection)
+void CTestRaftPaperFixture::TestCandidateStartNewElection(void)
 {
-    testNonleaderStartElection(StateCandidate);
+    testNonleaderStartElection(eStateCandidate);
 }
 
 // TestLeaderElectionInOneRoundRPC tests all cases that may happen in
@@ -366,14 +385,14 @@ void CTestRaftPaperFixture::TestCandidateStartNewElection)
 // b) it loses the election
 // c) it is unclear about the result
 // Reference: section 5.2
-void CTestRaftPaperFixture::TestLeaderElectionInOneRoundRPC)
+void CTestRaftPaperFixture::TestLeaderElectionInOneRoundRPC(void)
 {
     struct tmp
     {
         int size;
-        map<uint64_t, bool> votes;
-        StateType state;
-        tmp(int size, map<uint64_t, bool> votes, StateType s)
+        map<uint32_t, bool> votes;
+        EStateType state;
+        tmp(int size, map<uint32_t, bool> votes, EStateType s)
             : size(size), votes(votes), state(s)
         {
         }
@@ -382,22 +401,22 @@ void CTestRaftPaperFixture::TestLeaderElectionInOneRoundRPC)
     vector<tmp> tests;
     // win the election when receiving votes from a majority of the servers
     {
-        map<uint64_t, bool>	votes;
+        map<uint32_t, bool>	votes;
         tests.push_back(tmp(1, votes, eStateLeader));
     }
     {
-        map<uint64_t, bool>	votes;
+        map<uint32_t, bool>	votes;
         votes[2] = true;
         votes[3] = true;
         tests.push_back(tmp(3, votes, eStateLeader));
     }
     {
-        map<uint64_t, bool>	votes;
+        map<uint32_t, bool>	votes;
         votes[2] = true;
         tests.push_back(tmp(3, votes, eStateLeader));
     }
     {
-        map<uint64_t, bool>	votes;
+        map<uint32_t, bool>	votes;
         votes[2] = true;
         votes[3] = true;
         votes[4] = true;
@@ -405,27 +424,27 @@ void CTestRaftPaperFixture::TestLeaderElectionInOneRoundRPC)
         tests.push_back(tmp(5, votes, eStateLeader));
     }
     {
-        map<uint64_t, bool>	votes;
+        map<uint32_t, bool>	votes;
         votes[2] = true;
         votes[3] = true;
         votes[4] = true;
         tests.push_back(tmp(5, votes, eStateLeader));
     }
     {
-        map<uint64_t, bool>	votes;
+        map<uint32_t, bool>	votes;
         votes[2] = true;
         votes[3] = true;
         tests.push_back(tmp(5, votes, eStateLeader));
     }
     // return to follower state if it receives vote denial from a majority
     {
-        map<uint64_t, bool>	votes;
+        map<uint32_t, bool>	votes;
         votes[2] = false;
         votes[3] = false;
         tests.push_back(tmp(3, votes, eStateFollower));
     }
     {
-        map<uint64_t, bool>	votes;
+        map<uint32_t, bool>	votes;
         votes[2] = false;
         votes[3] = false;
         votes[4] = false;
@@ -433,7 +452,7 @@ void CTestRaftPaperFixture::TestLeaderElectionInOneRoundRPC)
         tests.push_back(tmp(5, votes, eStateFollower));
     }
     {
-        map<uint64_t, bool>	votes;
+        map<uint32_t, bool>	votes;
         votes[2] = true;
         votes[3] = false;
         votes[4] = false;
@@ -442,23 +461,23 @@ void CTestRaftPaperFixture::TestLeaderElectionInOneRoundRPC)
     }
     // stay in candidate if it does not obtain the majority
     {
-        map<uint64_t, bool>	votes;
-        tests.push_back(tmp(3, votes, StateCandidate));
+        map<uint32_t, bool>	votes;
+        tests.push_back(tmp(3, votes, eStateCandidate));
     }
     {
-        map<uint64_t, bool>	votes;
+        map<uint32_t, bool>	votes;
         votes[2] = true;
-        tests.push_back(tmp(5, votes, StateCandidate));
+        tests.push_back(tmp(5, votes, eStateCandidate));
     }
     {
-        map<uint64_t, bool>	votes;
+        map<uint32_t, bool>	votes;
         votes[2] = false;
         votes[3] = false;
-        tests.push_back(tmp(5, votes, StateCandidate));
+        tests.push_back(tmp(5, votes, eStateCandidate));
     }
     {
-        map<uint64_t, bool>	votes;
-        tests.push_back(tmp(5, votes, StateCandidate));
+        map<uint32_t, bool>	votes;
+        tests.push_back(tmp(5, votes, eStateCandidate));
     }
 
     int i;
@@ -466,10 +485,10 @@ void CTestRaftPaperFixture::TestLeaderElectionInOneRoundRPC)
     {
         tmp &t = tests[i];
 
-        vector<uint64_t> peers;
+        vector<uint32_t> peers;
         idsBySize(t.size, &peers);
-        CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-        CRaft *r = newTestRaft(1, peers, 10, 1, s);
+        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CRaft *r = pFrame->m_pRaftNode;
 
         {
             Message msg;
@@ -478,7 +497,7 @@ void CTestRaftPaperFixture::TestLeaderElectionInOneRoundRPC)
             msg.set_type(MsgHup);
             r->Step(msg);
         }
-        map<uint64_t, bool>::iterator iter;
+        map<uint32_t, bool>::iterator iter;
         for (iter = t.votes.begin(); iter != t.votes.end(); ++iter)
         {
             Message msg;
@@ -489,22 +508,24 @@ void CTestRaftPaperFixture::TestLeaderElectionInOneRoundRPC)
             r->Step(msg);
         }
 
-        CPPUNIT_ASSERT_EQUAL(r->GetState(), t.state) << "i: " << i;
-        CPPUNIT_ASSERT_EQUAL(r->GetTerm(), 1);
+        CPPUNIT_ASSERT(r->GetState() ==  t.state) ;
+        CPPUNIT_ASSERT(r->GetTerm() == 1);
+        pFrame->Uninit();
+        delete pFrame;
     }
 }
 
 // TestFollowerVote tests that each follower will vote for at most one
 // candidate in a given term, on a first-come-first-served basis.
 // Reference: section 5.2
-void CTestRaftPaperFixture::TestFollowerVote)
+void CTestRaftPaperFixture::TestFollowerVote(void)
 {
     struct tmp
     {
-        uint64_t vote;
-        uint64_t nvote;
+        uint32_t vote;
+        uint32_t nvote;
         bool wreject;
-        tmp(uint64_t vote, uint64_t nvote, bool reject)
+        tmp(uint32_t vote, uint32_t nvote, bool reject)
             : vote(vote), nvote(nvote), wreject(reject)
         {
         }
@@ -518,34 +539,33 @@ void CTestRaftPaperFixture::TestFollowerVote)
     tests.push_back(tmp(1, 2, true));
     tests.push_back(tmp(2, 1, true));
 
-    int i;
-    for (i = 0; i < tests.size(); ++i)
+    for (int i = 0; i < tests.size(); ++i)
     {
         tmp &t = tests[i];
 
-        vector<uint64_t> peers;
+        vector<uint32_t> peers;
         peers.push_back(1);
         peers.push_back(2);
         peers.push_back(3);
-        CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-        CRaft *r = newTestRaft(1, peers, 10, 1, s);
 
+        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CRaft *r = pFrame->m_pRaftNode;
         HardState hs;
         hs.set_term(1);
         hs.set_vote(t.vote);
-        r->loadState(hs);
+        r->SetHardState(hs);
 
         {
             Message msg;
             msg.set_from(t.nvote);
             msg.set_to(1);
+            msg.set_term(1);
             msg.set_type(MsgVote);
             r->Step(msg);
         }
 
         vector<Message*> msgs;
-        r->readMessages(&msgs);
-
+        pFrame->ReadMessages(msgs);
         vector<Message*> wmsgs;
         {
             Message *msg = new Message();
@@ -557,6 +577,10 @@ void CTestRaftPaperFixture::TestFollowerVote)
             wmsgs.push_back(msg);
         }
         CPPUNIT_ASSERT(isDeepEqualMsgs(msgs, wmsgs));
+        pFrame->FreeMessages(wmsgs);
+        pFrame->FreeMessages(msgs);
+        pFrame->Uninit();
+        delete pFrame;
     }
 }
 
@@ -565,7 +589,7 @@ void CTestRaftPaperFixture::TestFollowerVote)
 // to be leader whose term is at least as large as the candidate's current term,
 // it recognizes the leader as legitimate and returns to follower state.
 // Reference: section 5.2
-void CTestRaftPaperFixture::TestCandidateFallback)
+void CTestRaftPaperFixture::TestCandidateFallback(void)
 {
     vector<Message> tests;
 
@@ -590,12 +614,13 @@ void CTestRaftPaperFixture::TestCandidateFallback)
     {
         Message& msg = tests[i];
 
-        vector<uint64_t> peers;
+        vector<uint32_t> peers;
         peers.push_back(1);
         peers.push_back(2);
         peers.push_back(3);
-        CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-        CRaft *r = newTestRaft(1, peers, 10, 1, s);
+
+        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CRaft *r = pFrame->m_pRaftNode;
         {
             Message msg;
             msg.set_from(1);
@@ -603,57 +628,64 @@ void CTestRaftPaperFixture::TestCandidateFallback)
             msg.set_type(MsgHup);
             r->Step(msg);
         }
-        CPPUNIT_ASSERT_EQUAL(r->GetState(), StateCandidate);
+        CPPUNIT_ASSERT(r->GetState() == eStateCandidate);
         r->Step(msg);
 
-        CPPUNIT_ASSERT_EQUAL(r->GetState(), eStateFollower);
-        CPPUNIT_ASSERT_EQUAL(r->GetTerm(), msg.term());
+        CPPUNIT_ASSERT(r->GetState() == eStateFollower);
+        CPPUNIT_ASSERT(r->GetTerm() == msg.term());
+        pFrame->Uninit();
+        delete pFrame;
     }
 }
 
 // testNonleaderElectionTimeoutRandomized tests that election timeout for
 // follower or candidate is randomized.
 // Reference: section 5.2
-void testNonleaderElectionTimeoutRandomized(StateType state)
+void testNonleaderElectionTimeoutRandomized(EStateType state)
 {
-    uint64_t et = 10;
+    uint32_t et = 10;
 
-    vector<uint64_t> peers;
+    vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
     peers.push_back(3);
-    CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-    CRaft *r = newTestRaft(1, peers, et, 1, s);
-    int i;
+
+    CRaftFrame *pFrame = newTestRaft(1, peers, et, 1);
+    CRaft *r = pFrame->m_pRaftNode;
+    
     map<int, bool> timeouts;
-    for (i = 0; i < 50 * et; ++i)
+    for (uint32_t i = 0; i < 50 * et; ++i)
     {
         switch (state)
         {
         case eStateFollower:
             r->BecomeFollower(r->GetTerm() + 1, 2);
             break;
-        case StateCandidate:
+        case eStateCandidate:
             r->BecomeCandidate();
             break;
         }
 
-        uint64_t time = 0;
+        uint32_t time = 0;
         vector<Message*> msgs;
-        r->readMessages(&msgs);
+        pFrame->ReadMessages(msgs);
         while (msgs.size() == 0)
         {
-            r->tick();
+            r->OnTick();
             time++;
-            r->readMessages(&msgs);
+            pFrame->FreeMessages(msgs);
+            pFrame->ReadMessages(msgs);
         }
+        pFrame->FreeMessages(msgs);
         timeouts[time] = true;
     }
 
-    for (i = et + 1; i < 2 * et; ++i)
+    for (uint32_t i = et + 1; i < 2 * et; ++i)
     {
         CPPUNIT_ASSERT(timeouts[i]);
     }
+    pFrame->Uninit();
+    delete pFrame;
 }
 
 void CTestRaftPaperFixture::TestFollowerElectionTimeoutRandomized(void)
@@ -663,26 +695,28 @@ void CTestRaftPaperFixture::TestFollowerElectionTimeoutRandomized(void)
 
 void CTestRaftPaperFixture::TestCandidateElectionTimeoutRandomized(void)
 {
-    testNonleaderElectionTimeoutRandomized(StateCandidate);
+    testNonleaderElectionTimeoutRandomized(eStateCandidate);
 }
 
 // testNonleadersElectionTimeoutNonconflict tests that in most cases only a
 // single server(follower or candidate) will time out, which reduces the
 // likelihood of split vote in the new election.
 // Reference: section 5.2
-void testNonleadersElectionTimeoutNonconflict(StateType state)
+void testNonleadersElectionTimeoutNonconflict(EStateType state)
 {
-    uint64_t et = 10;
+    uint32_t et = 10;
     int size = 5;
     vector<CRaft*> rs;
-    vector<uint64_t> peers;
+    vector<CRaftFrame*> frames;
+    vector<uint32_t> peers;
     idsBySize(size, &peers);
     int i;
     for (i = 0; i < peers.size(); ++i)
     {
-        CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-        CRaft *r = newTestRaft(peers[i], peers, et, 1, s);
+        CRaftFrame *pFrame = newTestRaft(1, peers, et, 1);
+        CRaft *r = pFrame->m_pRaftNode;
         rs.push_back(r);
+        frames.push_back(pFrame);
     }
     int conflicts = 0;
     for (i = 0; i < 1000; ++i)
@@ -696,7 +730,7 @@ void testNonleadersElectionTimeoutNonconflict(StateType state)
             case eStateFollower:
                 r->BecomeFollower(r->GetTerm() + 1, None);
                 break;
-            case StateCandidate:
+            case eStateCandidate:
                 r->BecomeCandidate();
                 break;
             }
@@ -707,14 +741,16 @@ void testNonleadersElectionTimeoutNonconflict(StateType state)
         {
             for (j = 0; j < rs.size(); ++j)
             {
+                CRaftFrame *pFrame = frames[j];
                 CRaft *r = rs[j];
-                r->tick();
+                r->OnTick();
                 vector<Message*> msgs;
-                r->readMessages(&msgs);
+                pFrame->ReadMessages(msgs);
                 if (msgs.size() > 0)
                 {
                     ++timeoutNum;
                 }
+                pFrame->FreeMessages(msgs);
             }
         }
 
@@ -726,17 +762,22 @@ void testNonleadersElectionTimeoutNonconflict(StateType state)
     }
 
     float g = float(conflicts) / 1000;
-    EXPECT_FALSE(g > 0.3);
+    CPPUNIT_ASSERT(!(g > 0.3));
+    for (auto pFrame :frames)
+    {
+        pFrame->Uninit();
+        delete pFrame;
+    }
 }
 
-void CTestRaftPaperFixture::TestFollowersElectioinTimeoutNonconflict)
+void CTestRaftPaperFixture::TestFollowersElectioinTimeoutNonconflict(void)
 {
     testNonleadersElectionTimeoutNonconflict(eStateFollower);
 }
 
-void CTestRaftPaperFixture::TestCandidatesElectionTimeoutNonconflict)
+void CTestRaftPaperFixture::TestCandidatesElectionTimeoutNonconflict(void)
 {
-    testNonleadersElectionTimeoutNonconflict(StateCandidate);
+    testNonleadersElectionTimeoutNonconflict(eStateCandidate);
 }
 
 // TestLeaderStartReplication tests that when receiving client proposals,
@@ -747,19 +788,20 @@ void CTestRaftPaperFixture::TestCandidatesElectionTimeoutNonconflict)
 // the new entries.
 // Also, it writes the new entry into stable storage.
 // Reference: section 5.3
-void CTestRaftPaperFixture::TestLeaderStartReplication)
+void CTestRaftPaperFixture::TestLeaderStartReplication(void)
 {
-    vector<uint64_t> peers;
+    vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
     peers.push_back(3);
-    CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-    CRaft *r = newTestRaft(1, peers, 10, 1, s);
+
+    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CRaft *r = pFrame->m_pRaftNode;
     r->BecomeCandidate();
     r->BecomeLeader();
-
-    commitNoopEntry(r, s);
-    uint64_t li = r->GetLog()->lastIndex();
+    CRaftMemLog *pRaftLog = dynamic_cast<CRaftMemLog *>(r->m_pRaftLog);
+    commitNoopEntry(pFrame,r, pRaftLog->m_pStorage);
+    uint64_t li = r->GetLog()->GetLastIndex();
 
     {
         Entry entry;
@@ -772,11 +814,11 @@ void CTestRaftPaperFixture::TestLeaderStartReplication)
         r->Step(msg);
     }
 
-    CPPUNIT_ASSERT_EQUAL(r->GetLog()->lastIndex(), li + 1);
-    CPPUNIT_ASSERT_EQUAL(r->GetLog()->committed_, li);
+    CPPUNIT_ASSERT(r->GetLog()->GetLastIndex() == (li + 1));
+    CPPUNIT_ASSERT(r->GetLog()->GetCommitted() == li);
 
     vector<Message*> msgs, wmsgs;
-    r->readMessages(&msgs);
+    pFrame->ReadMessages(msgs);
 
     Entry entry;
     entry.set_index(li + 1);
@@ -784,7 +826,7 @@ void CTestRaftPaperFixture::TestLeaderStartReplication)
     entry.set_data("some data");
     EntryVec g, wents;
     wents.push_back(entry);
-    r->GetLog()->unstableEntries(&g);
+    r->GetLog()->UnstableEntries(g);
     CPPUNIT_ASSERT(isDeepEqualEntries(g, wents));
     {
         Message *msg = new Message();
@@ -811,6 +853,10 @@ void CTestRaftPaperFixture::TestLeaderStartReplication)
         wmsgs.push_back(msg);
     }
     CPPUNIT_ASSERT(isDeepEqualMsgs(msgs, wmsgs));
+    pFrame->FreeMessages(wmsgs);
+    pFrame->FreeMessages(msgs);
+    pFrame->Uninit();
+    delete pFrame;
 }
 
 // TestLeaderCommitEntry tests that when the entry has been safely replicated,
@@ -820,19 +866,21 @@ void CTestRaftPaperFixture::TestLeaderStartReplication)
 // and it includes that index in future AppendEntries RPCs so that the other
 // servers eventually find out.
 // Reference: section 5.3
-void CTestRaftPaperFixture::TestLeaderCommitEntry)
+void CTestRaftPaperFixture::TestLeaderCommitEntry(void)
 {
-    vector<uint64_t> peers;
+    vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
     peers.push_back(3);
-    CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-    CRaft *r = newTestRaft(1, peers, 10, 1, s);
+
+    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CRaft *r = pFrame->m_pRaftNode;
     r->BecomeCandidate();
     r->BecomeLeader();
+    CRaftMemLog *pRaftLog = dynamic_cast<CRaftMemLog *>(r->m_pRaftLog);
+    commitNoopEntry(pFrame, r, pRaftLog->m_pStorage);
 
-    commitNoopEntry(r, s);
-    uint64_t li = r->GetLog()->lastIndex();
+    uint64_t li = r->GetLog()->GetLastIndex();
 
     {
         Entry entry;
@@ -846,7 +894,7 @@ void CTestRaftPaperFixture::TestLeaderCommitEntry)
     }
 
     vector<Message*> msgs;
-    r->readMessages(&msgs);
+    pFrame->ReadMessages(msgs);
     int i;
     for (i = 0; i < msgs.size(); ++i)
     {
@@ -854,9 +902,9 @@ void CTestRaftPaperFixture::TestLeaderCommitEntry)
         r->Step(acceptAndReply(msg));
     }
 
-    CPPUNIT_ASSERT_EQUAL(r->GetLog()->committed_, li + 1);
+    CPPUNIT_ASSERT(r->GetLog()->GetCommitted() == (li + 1));
 
-    r->readMessages(&msgs);
+    pFrame->ReadMessages(msgs);
 
     Entry entry;
     entry.set_index(li + 1);
@@ -868,24 +916,27 @@ void CTestRaftPaperFixture::TestLeaderCommitEntry)
     for (i = 0; i < msgs.size(); ++i)
     {
         Message *msg = msgs[i];
-        CPPUNIT_ASSERT_EQUAL(msg->to(), i + 2);
+        CPPUNIT_ASSERT(msg->to() == (i + 2));
         CPPUNIT_ASSERT_EQUAL(msg->type(), MsgApp);
         CPPUNIT_ASSERT_EQUAL(msg->commit(), li + 1);
     }
+    pFrame->FreeMessages(msgs);
+    pFrame->Uninit();
+    delete pFrame;
 }
 
 // TestLeaderAcknowledgeCommit tests that a log entry is committed once the
 // leader that created the entry has replicated it on a majority of the servers.
 // Reference: section 5.3
-void CTestRaftPaperFixture::TestLeaderAcknowledgeCommit)
+void CTestRaftPaperFixture::TestLeaderAcknowledgeCommit(void)
 {
     struct tmp
     {
         int size;
-        map<uint64_t, bool> acceptors;
+        map<uint32_t, bool> acceptors;
         bool wack;
 
-        tmp(int size, map<uint64_t, bool> acceptors, bool ack)
+        tmp(int size, map<uint32_t, bool> acceptors, bool ack)
             : size(size), acceptors(acceptors), wack(ack)
         {
         }
@@ -893,66 +944,69 @@ void CTestRaftPaperFixture::TestLeaderAcknowledgeCommit)
 
     vector<tmp> tests;
     {
-        map<uint64_t, bool> acceptors;
+        map<uint32_t, bool> acceptors;
         tests.push_back(tmp(1, acceptors, true));
     }
     {
-        map<uint64_t, bool> acceptors;
+        map<uint32_t, bool> acceptors;
         tests.push_back(tmp(3, acceptors, false));
     }
     {
-        map<uint64_t, bool> acceptors;
+        map<uint32_t, bool> acceptors;
         acceptors[2] = true;
         tests.push_back(tmp(3, acceptors, true));
     }
     {
-        map<uint64_t, bool> acceptors;
+        map<uint32_t, bool> acceptors;
         acceptors[2] = true;
         acceptors[3] = true;
         tests.push_back(tmp(3, acceptors, true));
     }
     {
-        map<uint64_t, bool> acceptors;
+        map<uint32_t, bool> acceptors;
         tests.push_back(tmp(5, acceptors, false));
     }
     {
-        map<uint64_t, bool> acceptors;
+        map<uint32_t, bool> acceptors;
         acceptors[2] = true;
         tests.push_back(tmp(5, acceptors, false));
     }
     {
-        map<uint64_t, bool> acceptors;
+        map<uint32_t, bool> acceptors;
         acceptors[2] = true;
         acceptors[3] = true;
         tests.push_back(tmp(5, acceptors, true));
     }
     {
-        map<uint64_t, bool> acceptors;
+        map<uint32_t, bool> acceptors;
         acceptors[2] = true;
         acceptors[3] = true;
         acceptors[4] = true;
         tests.push_back(tmp(5, acceptors, true));
     }
     {
-        map<uint64_t, bool> acceptors;
+        map<uint32_t, bool> acceptors;
         acceptors[2] = true;
         acceptors[3] = true;
         acceptors[4] = true;
         acceptors[5] = true;
         tests.push_back(tmp(5, acceptors, true));
     }
-    int i;
-    for (i = 0; i < tests.size(); ++i)
+
+    for (int i = 0; i < tests.size(); ++i)
     {
         tmp &t = tests[i];
-        vector<uint64_t> peers;
+        vector<uint32_t> peers;
         idsBySize(t.size, &peers);
-        CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-        CRaft *r = newTestRaft(1, peers, 10, 1, s);
+
+        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CRaft *r = pFrame->m_pRaftNode;
         r->BecomeCandidate();
         r->BecomeLeader();
-        commitNoopEntry(r, s);
-        uint64_t li = r->GetLog()->lastIndex();
+
+        CRaftMemLog *pRaftLog = dynamic_cast<CRaftMemLog *>(r->m_pRaftLog);
+        commitNoopEntry(pFrame, r, pRaftLog->m_pStorage);
+        uint64_t li = r->GetLog()->GetLastIndex();
 
         {
             Entry entry;
@@ -965,7 +1019,7 @@ void CTestRaftPaperFixture::TestLeaderAcknowledgeCommit)
             r->Step(msg);
         }
         vector<Message*> msgs;
-        r->readMessages(&msgs);
+        pFrame->ReadMessages(msgs);
         int j;
         for (j = 0; j < msgs.size(); ++j)
         {
@@ -976,7 +1030,10 @@ void CTestRaftPaperFixture::TestLeaderAcknowledgeCommit)
             }
         }
 
-        CPPUNIT_ASSERT_EQUAL(r->GetLog()->committed_ > li, t.wack);
+        CPPUNIT_ASSERT_EQUAL(r->GetLog()->GetCommitted() > li, t.wack);
+        pFrame->FreeMessages(msgs);
+        pFrame->Uninit();
+        delete pFrame;
     }
 }
 
@@ -985,7 +1042,7 @@ void CTestRaftPaperFixture::TestLeaderAcknowledgeCommit)
 // entries created by previous leaders.
 // Also, it applies the entry to its local state machine (in log order).
 // Reference: section 5.3
-void CTestRaftPaperFixture::TestLeaderCommitPrecedingEntries)
+void CTestRaftPaperFixture::TestLeaderCommitPrecedingEntries(void)
 {
     vector<EntryVec> tests;
     {
@@ -1025,17 +1082,17 @@ void CTestRaftPaperFixture::TestLeaderCommitPrecedingEntries)
     for (i = 0; i < tests.size(); ++i)
     {
         EntryVec &t = tests[i];
-        vector<uint64_t> peers;
+        vector<uint32_t> peers;
         peers.push_back(1);
         peers.push_back(2);
         peers.push_back(3);
-        CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-        EntryVec appEntries = t;
-        s->Append(appEntries);
-        CRaft *r = newTestRaft(1, peers, 10, 1, s);
+
+        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1,t);
+        CRaft *r = pFrame->m_pRaftNode;
+        CRaftMemLog *pLog = dynamic_cast<CRaftMemLog *> (r->m_pRaftLog);
         HardState hs;
         hs.set_term(2);
-        r->loadState(hs);
+        r->SetHardState(hs);
         r->BecomeCandidate();
         r->BecomeLeader();
 
@@ -1051,7 +1108,7 @@ void CTestRaftPaperFixture::TestLeaderCommitPrecedingEntries)
         }
 
         vector<Message*> msgs;
-        r->readMessages(&msgs);
+        pFrame->ReadMessages(msgs);
         int j;
         for (j = 0; j < msgs.size(); ++j)
         {
@@ -1074,15 +1131,18 @@ void CTestRaftPaperFixture::TestLeaderCommitPrecedingEntries)
             entry.set_data("some data");
             wents.push_back(entry);
         }
-        r->GetLog()->nextEntries(&g);
-        CPPUNIT_ASSERT(isDeepEqualEntries(g, wents)) << "i:" << i;
+        pLog->nextEntries(g);
+        CPPUNIT_ASSERT(isDeepEqualEntries(g, wents));
+        pFrame->FreeMessages(msgs);
+        pFrame->Uninit();
+        delete pFrame;
     }
 }
 
 // TestFollowerCommitEntry tests that once a follower learns that a log entry
 // is committed, it applies the entry to its local state machine (in log order).
 // Reference: section 5.3
-void CTestRaftPaperFixture::TestFollowerCommitEntry)
+void CTestRaftPaperFixture::TestFollowerCommitEntry(void)
 {
     struct tmp
     {
@@ -1161,12 +1221,13 @@ void CTestRaftPaperFixture::TestFollowerCommitEntry)
     {
         tmp &t = tests[i];
 
-        vector<uint64_t> peers;
+        vector<uint32_t> peers;
         peers.push_back(1);
         peers.push_back(2);
         peers.push_back(3);
-        CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-        CRaft *r = newTestRaft(1, peers, 10, 1, s);
+
+        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CRaft *r = pFrame->m_pRaftNode;
         r->BecomeFollower(1, 2);
 
         {
@@ -1184,11 +1245,15 @@ void CTestRaftPaperFixture::TestFollowerCommitEntry)
             r->Step(msg);
         }
 
-        CPPUNIT_ASSERT_EQUAL(r->GetLog()->committed_, t.commit);
+        CPPUNIT_ASSERT(r->GetLog()->GetCommitted() == t.commit);
         EntryVec ents, wents;
-        r->GetLog()->nextEntries(&ents);
+        CRaftMemLog *pLog = dynamic_cast<CRaftMemLog *> (r->m_pRaftLog);
+        pLog->nextEntries(ents);
         wents.insert(wents.end(), t.entries.begin(), t.entries.begin() + t.commit);
-        CPPUNIT_ASSERT(isDeepEqualEntries(ents, wents)) << "i:" << i;
+        CPPUNIT_ASSERT(isDeepEqualEntries(ents, wents));
+        
+        pFrame->Uninit();
+        delete pFrame;
     }
 }
 
@@ -1197,7 +1262,7 @@ void CTestRaftPaperFixture::TestFollowerCommitEntry)
 // then it refuses the new entries. Otherwise it replies that it accepts the
 // append entries.
 // Reference: section 5.3
-void CTestRaftPaperFixture::TestFollowerCheckMsgApp)
+void CTestRaftPaperFixture::TestFollowerCheckMsgApp(void)
 {
     EntryVec entries;
     {
@@ -1245,17 +1310,17 @@ void CTestRaftPaperFixture::TestFollowerCheckMsgApp)
     {
         tmp& t = tests[i];
 
-        vector<uint64_t> peers;
+        vector<uint32_t> peers;
         peers.push_back(1);
         peers.push_back(2);
         peers.push_back(3);
-        CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-        EntryVec ents = entries;
-        s->Append(ents);
-        CRaft *r = newTestRaft(1, peers, 10, 1, s);
+
+        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1,entries);
+        CRaft *r = pFrame->m_pRaftNode;
+
         HardState hs;
         hs.set_commit(1);
-        r->loadState(hs);
+        r->SetHardState(hs);
         r->BecomeFollower(2, 2);
         {
             Message msg;
@@ -1271,7 +1336,7 @@ void CTestRaftPaperFixture::TestFollowerCheckMsgApp)
         }
 
         vector<Message *> msgs, wmsgs;
-        r->readMessages(&msgs);
+        pFrame->ReadMessages(msgs);
         {
             Message *msg = new Message();
             msg->set_from(1);
@@ -1284,7 +1349,11 @@ void CTestRaftPaperFixture::TestFollowerCheckMsgApp)
             wmsgs.push_back(msg);
         }
 
-        CPPUNIT_ASSERT(isDeepEqualMsgs(msgs, wmsgs)) << "i: " << i;
+        CPPUNIT_ASSERT(isDeepEqualMsgs(msgs, wmsgs));
+        pFrame->FreeMessages(wmsgs);
+        pFrame->FreeMessages(msgs);
+        pFrame->Uninit();
+        delete pFrame;
     }
 }
 
@@ -1293,7 +1362,7 @@ void CTestRaftPaperFixture::TestFollowerCheckMsgApp)
 // and append any new entries not already in the log.
 // Also, it writes the new entry into stable storage.
 // Reference: section 5.3
-void CTestRaftPaperFixture::TestFollowerAppendEntries)
+void CTestRaftPaperFixture::TestFollowerAppendEntries(void)
 {
     struct tmp
     {
@@ -1390,11 +1459,10 @@ void CTestRaftPaperFixture::TestFollowerAppendEntries)
     for (i = 0; i < tests.size(); ++i)
     {
         tmp& t = tests[i];
-        vector<uint64_t> peers;
+        vector<uint32_t> peers;
         peers.push_back(1);
         peers.push_back(2);
         peers.push_back(3);
-        CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
 
         EntryVec appEntries;
         Entry entry;
@@ -1405,8 +1473,9 @@ void CTestRaftPaperFixture::TestFollowerAppendEntries)
         entry.set_index(2);
         appEntries.push_back(entry);
 
-        s->Append(appEntries);
-        CRaft *r = newTestRaft(1, peers, 10, 1, s);
+        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1,appEntries);
+        CRaft *r = pFrame->m_pRaftNode;
+        CRaftMemLog *pLog = dynamic_cast<CRaftMemLog *> (r->m_pRaftLog);
         r->BecomeFollower(2, 2);
         {
             Message msg;
@@ -1426,19 +1495,22 @@ void CTestRaftPaperFixture::TestFollowerAppendEntries)
         }
 
         EntryVec wents, wunstable;
-        r->GetLog()->allEntries(&wents);
+        pLog->allEntries(wents);
         CPPUNIT_ASSERT(isDeepEqualEntries(wents, t.wents));
 
-        r->GetLog()->unstableEntries(&wunstable);
+        pLog->unstableEntries(wunstable);
         CPPUNIT_ASSERT(isDeepEqualEntries(wunstable, t.wunstable));
+        pFrame->Uninit();
+        delete pFrame;
     }
 }
 
 // TestLeaderSyncFollowerLog tests that the leader could bring a follower's log
 // into consistency with its own.
 // Reference: section 5.3, figure 7
-void CTestRaftPaperFixture::TestLeaderSyncFollowerLog)
+void CTestRaftPaperFixture::TestLeaderSyncFollowerLog(void)
 {
+#if 0
     EntryVec ents;
     {
         Entry entry;
@@ -1590,7 +1662,7 @@ void CTestRaftPaperFixture::TestLeaderSyncFollowerLog)
     {
         EntryVec& t = tests[i];
 
-        vector<uint64_t> peers;
+        vector<uint32_t> peers;
         peers.push_back(1);
         peers.push_back(2);
         peers.push_back(3);
@@ -1604,7 +1676,7 @@ void CTestRaftPaperFixture::TestLeaderSyncFollowerLog)
             HardState hs;
             hs.set_commit(leader->raftLog_->lastIndex());
             hs.set_term(term);
-            leader->loadState(hs);
+            leader->SetHardState(hs);
         }
 
         CRaftStorage *followerStorage = new MemoryStorage(&kDefaultLogger);
@@ -1614,7 +1686,7 @@ void CTestRaftPaperFixture::TestLeaderSyncFollowerLog)
         {
             HardState hs;
             hs.set_term(term - 1);
-            follower->loadState(hs);
+            follower->SetHardState(hs);
         }
         // It is necessary to have a three-node cluster.
         // The second may have more up-to-date log than the first one, so the
@@ -1635,7 +1707,7 @@ void CTestRaftPaperFixture::TestLeaderSyncFollowerLog)
             net->send(&msgs);
         }
         // The election occurs in the term after the one we loaded with
-        // lead.loadState above.
+        // lead.SetHardState above.
         {
             vector<Message> msgs;
             Message msg;
@@ -1659,12 +1731,13 @@ void CTestRaftPaperFixture::TestLeaderSyncFollowerLog)
 
         CPPUNIT_ASSERT_EQUAL(raftLogString(leader->raftLog_), raftLogString(follower->raftLog_)) << "i: " << i;
     }
+#endif
 }
 
 // TestVoteRequest tests that the vote request includes information about the candidate’s log
 // and are sent to all of the other nodes.
 // Reference: section 5.4.1
-void CTestRaftPaperFixture::TestVoteRequest)
+void CTestRaftPaperFixture::TestVoteRequest(void)
 {
     struct tmp
     {
@@ -1705,12 +1778,12 @@ void CTestRaftPaperFixture::TestVoteRequest)
     {
         tmp & t = tests[i];
 
-        vector<uint64_t> peers;
+        vector<uint32_t> peers;
         peers.push_back(1);
         peers.push_back(2);
         peers.push_back(3);
-        CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-        CRaft *r = newTestRaft(1, peers, 10, 1, s);
+        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CRaft *r = pFrame->m_pRaftNode;
         {
             Message msg;
             msg.set_from(2);
@@ -1728,23 +1801,23 @@ void CTestRaftPaperFixture::TestVoteRequest)
         }
 
         vector<Message*> msgs;
-        r->readMessages(&msgs);
-
+        pFrame->ReadMessages(msgs);
         int j;
-        for (j = 0; j < r->electionTimeout_ * 2; ++j)
+        for (j = 0; j < r->m_pConfig->m_nTicksElection * 2; ++j)
         {
-            r->tickElection();
+            r->OnTickElection();
         }
-        r->readMessages(&msgs);
-        CPPUNIT_ASSERT_EQUAL(msgs.size(), 2);
+
+        pFrame->ReadMessages(msgs);
+        CPPUNIT_ASSERT(msgs.size() == 2);
 
         for (j = 0; j < msgs.size(); ++j)
         {
             Message *msg = msgs[j];
 
-            CPPUNIT_ASSERT_EQUAL(msg->type(), MsgVote);
-            CPPUNIT_ASSERT_EQUAL(msg->to(), j + 2);
-            CPPUNIT_ASSERT_EQUAL(msg->term(), t.wterm);
+            CPPUNIT_ASSERT(msg->type() == MsgVote);
+            CPPUNIT_ASSERT(msg->to() == (j + 2));
+            CPPUNIT_ASSERT(msg->term() == t.wterm);
 
             uint64_t windex = t.ents[t.ents.size() - 1].index();
             uint64_t wlogterm = t.ents[t.ents.size() - 1].term();
@@ -1752,13 +1825,16 @@ void CTestRaftPaperFixture::TestVoteRequest)
             CPPUNIT_ASSERT_EQUAL(msg->index(), windex);
             CPPUNIT_ASSERT_EQUAL(msg->logterm(), wlogterm);
         }
+        pFrame->FreeMessages(msgs);
+        pFrame->Uninit();
+        delete pFrame;
     }
 }
 
 // TestVoter tests the voter denies its vote if its own log is more up-to-date
 // than that of the candidate.
 // Reference: section 5.4.1
-void CTestRaftPaperFixture::TestVoter)
+void CTestRaftPaperFixture::TestVoter(void)
 {
     struct tmp
     {
@@ -1873,13 +1949,12 @@ void CTestRaftPaperFixture::TestVoter)
     {
         tmp& t = tests[i];
 
-        vector<uint64_t> peers;
+        vector<uint32_t> peers;
         peers.push_back(1);
         peers.push_back(2);
-        CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-        s->Append(t.ents);
-        CRaft *r = newTestRaft(1, peers, 10, 1, s);
 
+        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1,t.ents);
+        CRaft *r = pFrame->m_pRaftNode;
         {
             Message msg;
             msg.set_from(2);
@@ -1892,20 +1967,23 @@ void CTestRaftPaperFixture::TestVoter)
         }
 
         vector<Message*> msgs;
-        r->readMessages(&msgs);
+        pFrame->ReadMessages(msgs);
 
-        CPPUNIT_ASSERT_EQUAL(msgs.size(), 1);
+        CPPUNIT_ASSERT(msgs.size() == 1);
         Message *msg = msgs[0];
 
         CPPUNIT_ASSERT_EQUAL(msg->type(), MsgVoteResp);
         CPPUNIT_ASSERT_EQUAL(msg->reject(), t.wreject);
+        pFrame->FreeMessages(msgs);
+        pFrame->Uninit();
+        delete pFrame;
     }
 }
 
 // TestLeaderOnlyCommitsLogFromCurrentTerm tests that only log entries from the leader’s
 // current term are committed by counting replicas.
 // Reference: section 5.4.2
-void CTestRaftPaperFixture::TestLeaderOnlyCommitsLogFromCurrentTerm)
+void CTestRaftPaperFixture::TestLeaderOnlyCommitsLogFromCurrentTerm(void)
 {
     EntryVec entries;
     {
@@ -1942,23 +2020,23 @@ void CTestRaftPaperFixture::TestLeaderOnlyCommitsLogFromCurrentTerm)
         tmp& t = tests[i];
         EntryVec ents = entries;
 
-        CRaftStorage *s = new MemoryStorage(&kDefaultLogger);
-        s->Append(ents);
-        vector<uint64_t> peers;
+        vector<uint32_t> peers;
         peers.push_back(1);
         peers.push_back(2);
-        CRaft *r = newTestRaft(1, peers, 10, 1, s);
+
+        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1, ents);
+        CRaft *r = pFrame->m_pRaftNode;
 
         HardState hs;
         hs.set_term(3);
-        r->loadState(hs);
+        r->SetHardState(hs);
 
         // become leader at term 3
         r->BecomeCandidate();
         r->BecomeLeader();
 
         vector<Message*> msgs;
-        r->readMessages(&msgs);
+        pFrame->ReadMessages(msgs);
 
         // propose a entry to current term
         {
@@ -1981,7 +2059,9 @@ void CTestRaftPaperFixture::TestLeaderOnlyCommitsLogFromCurrentTerm)
             r->Step(msg);
         }
 
-        CPPUNIT_ASSERT_EQUAL(r->GetLog()->committed_, t.wcommit);
+        CPPUNIT_ASSERT_EQUAL(r->GetLog()->GetCommitted(), t.wcommit);
+        pFrame->FreeMessages(msgs);
+        pFrame->Uninit();
+        delete pFrame;
     }
 }
-#endif

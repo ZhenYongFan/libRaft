@@ -1,8 +1,16 @@
 #include "stdafx.h"
+#include "raft.pb.h"
+using namespace raftpb;
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
+
 #include "TestRaftFrame.h"
 #include <RaftUtil.h>
+#include "NullLogger.h"
+extern CNullLogger kDefaultLogger;
 
-CRaftConfig* newTestConfig(uint64_t id, const vector<uint64_t>& peers, int election, int hb)
+CRaftConfig* newTestConfig(uint32_t id, const vector<uint32_t>& peers, int election, int hb)
 {
     CRaftConfig *pConfig = new CRaftConfig();
     pConfig->m_nRaftID = int(id);
@@ -12,6 +20,7 @@ CRaftConfig* newTestConfig(uint64_t id, const vector<uint64_t>& peers, int elect
     pConfig->m_nMaxInfilght = 256;
     pConfig->m_optionReadOnly = ReadOnlySafe;
     pConfig->m_bCheckQuorum = false;
+    pConfig->m_bPreVote = false;
     for (auto peer : peers)
     {
         CRaftInfo info;
@@ -21,6 +30,32 @@ CRaftConfig* newTestConfig(uint64_t id, const vector<uint64_t>& peers, int elect
         pConfig->m_aNodes.push_back(info);
     }
     return pConfig;
+}
+
+
+CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents)
+{
+    std::string strErrMsg;
+    CRaftFrame *pFrame = new CRaftFrame();
+    if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, ents, strErrMsg))
+    {
+        delete pFrame;
+        pFrame = NULL;
+    }
+    return pFrame;
+}
+
+CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb)
+{
+    std::string strErrMsg;
+    CRaftFrame *pFrame = new CRaftFrame();
+    EntryVec ents;
+    if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, ents, strErrMsg))
+    {
+        delete pFrame;
+        pFrame = NULL;
+    }
+    return pFrame;
 }
 
 CRaftFrame::CRaftFrame(void)
@@ -37,7 +72,7 @@ CRaftFrame::~CRaftFrame(void)
    // Uninit();
 }
 
-bool CRaftFrame::Init(uint64_t id, const vector<uint64_t>& peers, int election, int hb, CLogger *pLogger, std::string &strErrMsg)
+bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, EntryVec &ents, std::string &strErrMsg)
 {
     bool bInit = false;
     m_pConfig = newTestConfig(id, peers, election, hb);
@@ -48,6 +83,7 @@ bool CRaftFrame::Init(uint64_t id, const vector<uint64_t>& peers, int election, 
         if (m_pIoQueue->Init(1024, strErrMsg))
         {
             m_pStorage = new CRaftMemStorage(pLogger);
+            m_pStorage->Append(ents);
             m_pRaftLog = newLog(m_pStorage, pLogger);
             m_pRaftNode = new CRaft(m_pConfig, m_pRaftLog, m_pMsgQueue, m_pIoQueue, pLogger);
             if (m_pRaftNode->Init(strErrMsg))
@@ -131,5 +167,14 @@ void CRaftFrame::FreeMessages(void)
             delete pLogOperation;
             pMsg = m_pIoQueue->Pop(0);
         }
+    }
+}
+
+void idsBySize(int size, vector<uint32_t>* ids)
+{
+    int i = 0;
+    for (i = 0; i < size; ++i)
+    {
+        ids->push_back(1 + i);
     }
 }

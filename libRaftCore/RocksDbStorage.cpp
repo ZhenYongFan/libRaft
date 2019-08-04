@@ -1,6 +1,8 @@
 #include "stdafx.h"
-#include "RocksDbStorage.h"
 #include "raft.pb.h"
+using namespace raftpb;
+
+#include "RocksDbStorage.h"
 #include <rocksdb/db.h>
 #include <rocksdb/slice.h>
 #include <rocksdb/options.h>

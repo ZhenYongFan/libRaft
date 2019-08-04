@@ -24,7 +24,7 @@ void CProgress::ResetState(ProgressState state)
     m_bPaused = false;
     pendingSnapshot_ = 0;
     state_ = state;
-    ins_.reset();
+    ins_.Reset();
 }
 
 void CProgress::BecomeProbe(void)
@@ -123,7 +123,7 @@ void CProgress::Resume(void)
     m_bPaused = false;
 }
 
-const char* CProgress::stateString()
+const char* CProgress::GetStateText()
 {
     if (state_ == ProgressStateProbe)
     {
@@ -151,7 +151,7 @@ bool CProgress::IsPaused()
     case ProgressStateProbe:
         return m_bPaused;
     case ProgressStateReplicate:
-        return ins_.full();
+        return ins_.IsFull();
     case ProgressStateSnapshot:
         return true;
     }
@@ -169,19 +169,19 @@ std::string CProgress::GetInfoText(void)
 {
     char tmp[500];
     snprintf(tmp, sizeof(tmp), "next = %llu, match = %llu, state = %s, waiting = %d, pendingSnapshot = %llu",
-        m_u64NextLogIndex, m_u64MatchLogIndex, stateString(), IsPaused(), pendingSnapshot_);
+        m_u64NextLogIndex, m_u64MatchLogIndex, GetStateText(), IsPaused(), pendingSnapshot_);
     return std::string(tmp);
 }
 
-void inflights::add(uint64_t infight)
+void inflights::Add(uint64_t infight)
 {
-    if (full())
+    if (IsFull())
     {
-        logger_->Fatalf(__FILE__, __LINE__, "cannot add into a full inflights");
+        m_pLogger->Fatalf(__FILE__, __LINE__, "cannot add into a full inflights");
     }
 
-    uint64_t next = start_ + count_;
-    uint64_t size = size_;
+    uint64_t next = m_nStartPos + m_nCount;
+    uint64_t size = m_nSize;
 
     if (next >= size)
         next -= size;
@@ -189,7 +189,7 @@ void inflights::add(uint64_t infight)
     if (next >= buffer_.size())
         growBuf();
     buffer_[next] = infight;
-    count_++;
+    m_nCount++;
 }
 
 // grow the inflight buffer by doubling up to inflights.size. We grow on demand
@@ -200,21 +200,21 @@ void inflights::growBuf(void)
     uint64_t newSize = buffer_.size() * 2;
     if (newSize == 0)
         newSize = 1;
-    else if (newSize > size_)
-        newSize = size_;
+    else if (newSize > m_nSize)
+        newSize = m_nSize;
     buffer_.resize(newSize);
 }
 
 // freeTo frees the inflights smaller or equal to the given `to` flight.
 void inflights::freeTo(uint64_t to)
 {
-    if (count_ == 0 || to < buffer_[start_])
+    if (m_nCount == 0 || to < buffer_[m_nStartPos])
     {
         return;
     }
 
-    int i = 0, idx = start_;
-    for (i = 0; i < count_; ++i)
+    int i = 0, idx = m_nStartPos;
+    for (i = 0; i < m_nCount; ++i)
     {
         if (to < buffer_[idx])
         {  // found the first large inflight
@@ -222,7 +222,7 @@ void inflights::freeTo(uint64_t to)
         }
 
         // increase index and maybe rotate
-        int size = size_;
+        int size = m_nSize;
         ++idx;
         if (idx >= size)
         {
@@ -231,28 +231,28 @@ void inflights::freeTo(uint64_t to)
     }
 
     // free i inflights and set new start index
-    count_ -= i;
-    start_ = idx;
-    if (count_ == 0)
+    m_nCount -= i;
+    m_nStartPos = idx;
+    if (m_nCount == 0)
     {
         // inflights is empty, reset the start index so that we don't grow the
         // buffer unnecessarily.
-        start_ = 0;
+        m_nStartPos = 0;
     }
 }
 
 void inflights::freeFirstOne(void)
 {
-    freeTo(buffer_[start_]);
+    freeTo(buffer_[m_nStartPos]);
 }
 
-bool inflights::full(void)
+bool inflights::IsFull(void)
 {
-    return count_ == size_;
+    return m_nCount == m_nSize;
 }
 
-void inflights::reset(void)
+void inflights::Reset(void)
 {
-    count_ = 0;
-    start_ = 0;
+    m_nCount = 0;
+    m_nStartPos = 0;
 }

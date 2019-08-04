@@ -1,4 +1,10 @@
 #include "stdafx.h"
+#include "raft.pb.h"
+using namespace raftpb;
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
+
 #include "TestUnstableLogFixture.h"
 #include "UnstableLog.h"
 #include "NullLogger.h"

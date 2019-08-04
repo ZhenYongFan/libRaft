@@ -1,4 +1,7 @@
 #include "stdafx.h"
+#include "raft.pb.h"
+using namespace raftpb;
+
 #include <stdint.h>
 #include "RaftMemLog.h"
 #include "RaftUtil.h"
@@ -245,7 +248,8 @@ string CRaftMemLog::String(void)
 {
     char tmp[200];
     snprintf(tmp, sizeof(tmp), "committed=%llu, applied=%llu, unstable.offset=%llu, len(unstable.Entries)=%llu",
-        m_pStorage->m_u64Committed, m_pStorage->m_u64Applied, m_unstablePart.m_u64Offset, m_unstablePart.m_vecEntries.size());
+        m_pStorage->m_u64Committed, m_pStorage->m_u64Applied, 
+        m_unstablePart.m_u64Offset, m_unstablePart.m_vecEntries.size());
     return tmp;
 }
 
@@ -275,6 +279,12 @@ uint64_t CRaftMemLog::ZeroTermOnErrCompacted(uint64_t u64Term, int nErrorNo)
     else
         m_pLogger->Fatalf(__FILE__, __LINE__, "unexpected error: %s", GetErrorString(nErrorNo));
     return 0;
+}
+
+void CRaftMemLog::UnstableEntries(EntryVec &entries)
+{
+    entries.clear();
+    entries = m_unstablePart.m_vecEntries;
 }
 
 bool CRaftMemLog::IsMatchTerm(uint64_t u64Index, uint64_t u64Term)

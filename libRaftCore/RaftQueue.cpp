@@ -36,8 +36,8 @@ void *CRaftQueue::Pop(uint32_t uTimeout)
     if (WAIT_OBJECT_0 == m_semObj.Wait(uTimeout))
     {
         std::lock_guard<std::mutex> queueGuard(m_mutxQueue);
-        pObj = m_listMsg.back();
-        m_listMsg.pop_back();
+        pObj = m_listMsg.front();
+        m_listMsg.pop_front();
         m_semSpace.Post(1);
     }
     return pObj;

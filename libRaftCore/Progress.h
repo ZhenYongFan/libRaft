@@ -7,36 +7,37 @@ class CLogger;
 ///\brief 环形队列
 struct LIBRAFTCORE_API inflights
 {
-    ///\brief the starting index in the buffer
-    int start_;
+    ///\brief 缓冲区中存数据的起始位置
+    int m_nStartPos;
 
-    ///\brief number of inflights in the buffer
-    int count_;
+    ///\brief 队列中当前的对象个数
+    int m_nCount;
 
-    ///\brief the size of the buffer
-    int size_;
+    ///\brief 队列缓冲区大小
+    int m_nSize;
 
     ///\brief buffer contains the index of the last entry inside one message.
     std::vector<uint64_t> buffer_;
    
     ///\brief 日志输出器
-    CLogger* logger_;
+    CLogger* m_pLogger;
 
-    void add(uint64_t infight);
+    void Add(uint64_t infight);
     void growBuf(void);
     void freeTo(uint64_t to);
     void freeFirstOne(void);
-    bool full(void);
-    void reset(void);
+    bool IsFull(void);
+    void Reset(void);
 
     inflights(int nSize, CLogger *logger)
-        : start_(0),
-        count_(0),
-        size_(nSize),
-        logger_(logger)
+        : m_nStartPos(0),
+        m_nCount(0),
+        m_nSize(nSize),
+        m_pLogger(logger)
     {
         buffer_.resize(nSize);
     }
+
     ~inflights()
     {
     }
@@ -53,20 +54,36 @@ class LIBRAFTCORE_API CProgress
 {
 public:
     ///\brief 构造函数
+    ///\param u64Next 下一个日志号
+    ///\param nMaxInfilght 环形队列最大容量
+    ///\param pLogger 日志输出对象
     CProgress(uint64_t u64Next, int nMaxInfilght, CLogger *pLogger);
 
     ///\brief 析构函数
     ///\attention 为了效率，此处不是虚函数呀
     ~CProgress(void);
     
-    const char* stateString();
-    void ResetState(ProgressState state);
+    ///\brief 取得状态对应的名称
+    ///\return 状态对应的名称
+    const char* GetStateText(void);
 
+    ///\brief 设置状态，并复位
+    ///\param statePro 状态
+    void ResetState(ProgressState statePro);
+
+    ///\brief 状态转换为Probe
     void BecomeProbe(void);
+
+    ///\brief 状态转换为Replicate
     void BecomeReplicate(void);
+
+    ///\brief 状态转换为Snapshot
     void BecomeSnapshot(uint64_t snapshoti);
     
+    ///\brief 尝试更新
+    ///\param u64Index 日志索引号
     bool MaybeUpdate(uint64_t u64Index);
+
     void optimisticUpdate(uint64_t n);
     bool maybeDecrTo(uint64_t rejected, uint64_t last);
     void snapshotFailure();
@@ -94,8 +111,7 @@ public:
     // before and stops sending any replication message.
     ProgressState state_;
 
-    // Paused is used in ProgressStateProbe.
-    // When Paused is true, raft should pause sending replication message to this peer.
+    ///\brief 在ProgressStateProbe状态时生效，如果是true，raft暂停向其发送复制消息
     bool m_bPaused;
 
     // PendingSnapshot is used in ProgressStateSnapshot.

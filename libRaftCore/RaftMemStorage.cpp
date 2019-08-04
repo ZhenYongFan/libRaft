@@ -1,4 +1,7 @@
 #include "stdafx.h"
+#include "raft.pb.h"
+using namespace raftpb;
+
 #include "RaftMemStorage.h"
 #include "RaftUtil.h"
 

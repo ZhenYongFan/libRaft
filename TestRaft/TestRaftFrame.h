@@ -12,7 +12,7 @@ public:
     
     virtual ~CRaftFrame(void);
     
-    bool Init(uint64_t id, const vector<uint64_t>& peers, int election, int hb, CLogger *pLogger, std::string &strErrMsg);
+    bool Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger,EntryVec &ents,std::string &strErrMsg);
     
     void Uninit(void);
 
@@ -29,5 +29,7 @@ public:
     CRaftLog *m_pRaftLog;
     CRaft *m_pRaftNode;
 };
+CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb);
 
-CRaftFrame* newTestRaft(uint64_t id, const vector<uint64_t>& peers, int election, int hb);
+CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents);
+void idsBySize(int size, vector<uint32_t>* ids);

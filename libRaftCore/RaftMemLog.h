@@ -9,6 +9,14 @@
 class LIBRAFTCORE_API CRaftMemLog :public CRaftLog
 {
 public:
+    ///\brief 构造函数
+    ///\param pStorage Raft日志的持久化管理器
+    ///\param pLogger 调试用的日志输出器
+    CRaftMemLog(CRaftStorage *pStorage, CLogger *pLogger);
+
+    ///\brief 析构函数
+    virtual ~CRaftMemLog(void);
+
     ///\brief 取得第一条日志的索引号
     ///\return 取得的索引号
     virtual uint64_t GetFirstIndex(void);
@@ -91,7 +99,15 @@ public:
     ///\brief 取得已经应用的日志号
     virtual uint64_t GetApplied(void);
 
+    ///\brief 根据错误号过滤任期号
+    ///\param u64Term  任期
+    ///\param nErrorNo 错误号
+    ///\return 如果成功则返回任期号，如果错误号是ErrCompacted，返回0，其他则是严重错误
     virtual uint64_t ZeroTermOnErrCompacted(uint64_t u64Term, int nErrorNo);
+
+    ///\brief 取得所有非持久化日志
+    ///\param entries 取得的日志集合
+    virtual void UnstableEntries(EntryVec &entries);
 
     virtual int snapshot(Snapshot **snapshot);
 
@@ -99,11 +115,7 @@ public:
 
     virtual int InitialState(HardState &hs, ConfState &cs);
 
-    CRaftMemLog(CRaftStorage *pStorage, CLogger *pLogger);
-
-    virtual ~CRaftMemLog(void);
-
-    string String();
+    string String(void);
 
     uint64_t findConflict(const EntryVec& entries);
 
@@ -111,7 +123,7 @@ public:
 
     void nextEntries(EntryVec& entries);
 
-    bool hasNextEntries();
+    bool hasNextEntries(void);
     
     void StableTo(uint64_t u64Index, uint64_t u64Term);
 

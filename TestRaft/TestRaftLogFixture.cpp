@@ -1,4 +1,10 @@
 #include "stdafx.h"
+#include "raft.pb.h"
+using namespace raftpb;
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
+
 #include "TestRaftLogFixture.h"
 #include "RaftMemLog.h"
 #include "RaftMemStorage.h"

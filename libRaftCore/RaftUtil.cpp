@@ -1,5 +1,7 @@
 #include "stdafx.h"
-#include <string>
+#include "raft.pb.h"
+using namespace raftpb;
+
 #include "RaftUtil.h"
 #include "RaftMemLog.h"
 
@@ -188,19 +190,6 @@ MessageType VoteRespMsgType(MessageType typeMsg)
         return MsgPreVoteResp;
 }
 
-string joinStrings(const vector<string>& strs, const string &sep) {
-  string ret = "";
-  size_t i;
-  for (i = 0; i < strs.size(); ++i) {
-    if (ret.length() > 0) {
-      ret += sep;
-    }
-    ret += strs[i];
-  }
-
-  return ret;
-}
-
 const char *pstrTypeString[] = {
     "MsgHup",
     "MsgBeat",
@@ -223,16 +212,6 @@ const char *pstrTypeString[] = {
     "MsgPreVoteResp"
 };
 
-string entryString(const Entry& entry)
-{
-    char tmp[100];
-    snprintf(tmp, sizeof(tmp), "term:%llu, index:%llu, type:%d",
-        entry.term(), entry.index(), entry.type());
-    string str = tmp;
-    str += ", data:" + entry.data() + "\n";
-    return str;
-}
-
 void copyEntries(const Message& msg, EntryVec &entries)
 {
     for (int i = 0; i < msg.entries_size(); ++i)
@@ -247,27 +226,49 @@ const char* CRaftUtil::MsgType2String(int typeMsg)
         return "unknown msg";
 }
 
+string CRaftUtil::EntryString(const Entry& entry)
+{
+    char tmp[100];
+    snprintf(tmp, sizeof(tmp), "term:%llu, index:%llu, type:%d",
+        entry.term(), entry.index(), entry.type());
+    string str = tmp;
+    str += ", data:" + entry.data() + "\n";
+    return str;
+}
+
+string CRaftUtil::JoinStrings(const vector<string>& strPeers, const string &strSep)
+{
+    string strJoins ;
+    for (auto strPeer :strPeers)
+    {
+        if(strJoins.empty())
+            strJoins += strSep;
+        strJoins += strPeer;
+    }
+    return strJoins;
+}
+
 // newLog returns log using the given storage. It recovers the log to the state
 // that it just commits and applies the latest snapshot.
 CRaftMemLog* newLog(CRaftStorage *pStorage, CLogger *pLogger)
 {
-    CRaftMemLog *log = new CRaftMemLog(pStorage, pLogger);
+    CRaftMemLog *pRaftLog = new CRaftMemLog(pStorage, pLogger);
 
-    uint64_t firstIndex, lastIndex;
-    int err = pStorage->FirstIndex(firstIndex);
-    if (!SUCCESS(err))
-        pLogger->Fatalf(__FILE__, __LINE__, "get first index err:%s", GetErrorString(err));
+    uint64_t u64FirstIndex, u64LastIndex;
+    int nErrorNo = pStorage->FirstIndex(u64FirstIndex);
+    if (!SUCCESS(nErrorNo))
+        pLogger->Fatalf(__FILE__, __LINE__, "get first index err:%s", GetErrorString(nErrorNo));
 
-    err = pStorage->LastIndex(lastIndex);
-    if (!SUCCESS(err))
-        pLogger->Fatalf(__FILE__, __LINE__, "get last index err:%s", GetErrorString(err));
+    nErrorNo = pStorage->LastIndex(u64LastIndex);
+    if (!SUCCESS(nErrorNo))
+        pLogger->Fatalf(__FILE__, __LINE__, "get last index err:%s", GetErrorString(nErrorNo));
 
-    log->m_unstablePart.m_u64Offset = lastIndex + 1;
-    log->m_unstablePart.m_pLogger = pLogger;
+    pRaftLog->m_unstablePart.m_u64Offset = u64LastIndex + 1;
+    pRaftLog->m_unstablePart.m_pLogger = pLogger;
 
     // Initialize our committed and applied pointers to the time of the last compaction.
-    log->m_pStorage->m_u64Committed = firstIndex - 1;
-    log->m_pStorage->m_u64Applied = firstIndex - 1;
+    pRaftLog->m_pStorage->m_u64Committed = u64FirstIndex - 1;
+    pRaftLog->m_pStorage->m_u64Applied = u64FirstIndex - 1;
 
-    return log;
+    return pRaftLog;
 }

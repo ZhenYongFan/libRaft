@@ -99,7 +99,15 @@ public:
     ///\attention 成功条件：应用号大于现有应用号小于等于提交号
     virtual void AppliedTo(uint64_t u64Applied) = 0;
 
+    ///\brief 根据错误号过滤任期号
+    ///\param u64Term  任期
+    ///\param nErrorNo 错误号
+    ///\return 如果成功则返回任期号，如果错误号是ErrCompacted，返回0，其他则是严重错误
     virtual uint64_t ZeroTermOnErrCompacted(uint64_t u64Term, int nErrorNo) = 0;
+
+    ///\brief 取得所有非持久化日志
+    ///\param entries 取得的日志集合
+    virtual void UnstableEntries(EntryVec &entries) = 0;
 
     virtual int snapshot(Snapshot **snapshot) = 0;
 

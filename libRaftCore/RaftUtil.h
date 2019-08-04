@@ -34,17 +34,27 @@ LIBRAFTCORE_API CRaftMemLog* newLog(CRaftStorage *pStorage, CLogger *pLogger);
 
 END_C_DECLS
 
-LIBRAFTCORE_API std::string  joinStrings(const vector<string>& strs, const string &sep);
-LIBRAFTCORE_API std::string  entryString(const Entry& entry);
-
 ///\brief 一组用于Raft算法的函数组成的工具类
 class LIBRAFTCORE_API CRaftUtil
 {
 public:
+    
     ///\brief 得到对应Message类型的Messge名称
     ///\param typeMsg Message类型
     ///\return Messge名称
     static const char* MsgType2String(int typeMsg);
+
+    ///\brief 日志对象转化为可显示字符串，用于输出日志
+    ///\param entry 日志对象
+    ///\return 可显示字符串
+    static std::string  EntryString(const Entry& entry);
+
+    ///\brief 输出节点列表，用于输出日志
+    ///\param strPeers 节点列表
+    ///\param strSep 分隔符
+    ///\return 用于输出日志的节点列表字符串
+    static std::string  JoinStrings(const vector<string>& strPeers, const string &sep);
+
 private:
     ///\brief 禁用的缺省构造
     CRaftUtil(void)

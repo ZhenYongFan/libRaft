@@ -16,17 +16,20 @@ public:
     ///\brief 发起选举的类型
     enum CampaignType
     {
-        // campaignPreElection represents the first phase of a normal election when
-        // Config.PreVote is true.
+        ///\brief 预选阶段，用下一任期号尝试预选，通过后才任期号加1开始正式选举
+        ///\remark 防止当前节点的任期号无效增长
+        ///\attention 当预选模式打开时生效
         campaignPreElection = 1,
+
         // campaignElection represents a normal (time-based) election (the second phase
         // of the election when Config.PreVote is true).
         campaignElection = 2,
-        // campaignTransfer represents the type of leader transfer
-        campaignTransfer = 3
+
+        campaignTransfer = 3 ///< 由sa指定选举某个Raft，要求当前Leader在适当时机放弃领导者角色，支持该Raft选举
     };
 
 public:
+    ///\brief 构造函数
     CRaft(CRaftConfig *pConfig, CRaftLog *pRaftLog, CRaftQueue *pMsgQueue, CRaftQueue *pIoQueue, CLogger *pLogger);
     
     ///\brief 析构函数
@@ -44,9 +47,13 @@ public:
     virtual void OnTick(void);
     
     ///\brief 处理消息
+    ///\param msg 消息体
     virtual int  Step(const Message& msg);
 
-public: // for test
+    ///\brief Leader记录日志
+    ///\param entries 日志对象，自动添加任期号和日志索引号
+    ///\attention 考虑到单节点模式，在函数最后尝试提交操作
+    void AppendEntry(EntryVec &entries);
     
     ///\brief 变化角色（状态）
     void BecomeFollower(uint64_t u64Term, uint32_t nLeaderID);
@@ -54,10 +61,10 @@ public: // for test
     void BecomePreCandidate(void);
     void BecomeLeader(void);
 
-    ///\brief 广播日志
+    ///\brief Leader向Follower广播日志
     void BcastAppend(void);
 
-    ///\brief 取得当前状态
+    ///\brief 取得当前状态机的角色
     inline EStateType GetState(void)
     {
         return m_stateRaft;
@@ -69,21 +76,31 @@ public: // for test
         return m_u64Term;
     }
 
-    ///\brief 取得日志对象
+    ///\brief 取得日志管理对象
     inline CRaftLog *GetLog(void)
     {
         return m_pRaftLog;
     }
 
-protected:
-
+    ///\brief 设置“硬”状态,即需要持久化的状态
+    ///\param hs “硬”状态,即需要持久化的状态
     void SetHardState(const HardState &hs);
+
+    ///\brief 判断某节点是否投票
+    ///\param nRaftID 节点ID
+    ///\return 投票情况: 0 投赞成票；1 投反对票; 2 没有投票
+    int CheckVoted(uint32_t nRaftID);
+
+    ///\brief Follower和Candidates处理Tick定时器消息
+    void OnTickElection(void);
+protected:
+    
     void GetNodes(vector<uint32_t> &nodes);
     bool HasLeader(void);
     void GetSoftState(CSoftState &ss);
     void GetHardState(HardState &hs);
 
-    ///\brief 取得法定人数
+    ///\brief 取得法定人数，即有效节点数的1/2 + 1
     int GetQuorum(void);
 
     ///\brief 发送Raft Peer之间的消息
@@ -93,16 +110,27 @@ protected:
     void SendReadReady(CReadState *pReadState);
 
     ///\brief Leader和代理写的Follower提交日志后，发起写操作和移动Apply日志序号的工作
-    void SendWriteReady(CReadState *pReadState);
+    void SendWriteReady(CReadState *pWriteState);
 
     ///\brief 非代理写的Follower提交日志后，发起Apply日志的工作
     void SendApplyReady(uint64_t u64ApplyTo);
-
+    
+    ///\brief 向指定节点发送日志
+    ///\param nToID 目标节点ID
     void SendAppend(uint32_t nToID);
 
-    ///\brief 广播心跳
+    ///\brief Leader向所有Follower发送心跳信息
+    ///\attention 顺便发送读队列中最后一个请求的唯一标识，在ReadOnlySafe时处理读请求
     void BcastHeartbeat(void);
+
+    ///\brief Leader向所有Follower发送心跳信息
+    ///\param strContext 顺便发送读队列中最后一个请求的唯一标识，在ReadOnlySafe时处理读请求
     void BcastHeartbeatWithCtx(const string &strContext);
+
+    ///\brief Leader向一个Follower发送心跳信息
+    ///\param nToID Follower ID
+    ///\param strContext 顺便发送读队列中最后一个请求的唯一标识，在ReadOnlySafe时处理读请求
+    ///\attention 顺便发送Leader提交日志号和已同步日志索引号的最小值，方便Follower提交
     void SendHeartbeat(uint32_t nToID, const string &strContext);
 
     ///\brief 角色变化时（除变为预选）重置相关属性
@@ -127,7 +155,7 @@ protected:
     const char* GetCampaignString(CampaignType typeCampaign);
 
     ///\brief 发起竞选
-    ///\param typeCampaign 发起此次竞选的类型
+    ///\param typeCampaign 发起此次竞选的类型，预选，正式选举，sa指定
     void Campaign(CampaignType typeCampaign);
     
     ///\brief Leader 尝试加大提交索引号
@@ -139,41 +167,49 @@ protected:
     ///\param u64Committed 已经提交的日志号
     void CommitWrite(uint64_t u64Committed);
 
-    ///\brief Leader记录日志
-    void AppendEntry(EntryVec &entries);
-
-    ///\brief Follower接受日志消息
+    ///\brief Follower接受日志消息 \n
+    /// 1.消息的索引值小于当前节点已提交的值，则返回MsgAppResp消息类型，并返回已提交的位置 \n
+    /// 2.如果消息追加成功，则返回MsgAppResp消息类型，并返回最后一条记录的索引值 \n
+    /// 3.如果追加失败，则Reject设为true，并返回raftLog中最后一条记录的索引
     void OnAppendEntries(const Message& msg);
 
     ///\brief Follower接受心跳消息
-    void OnHeartbeat(const Message& msg);
+    ///\param msgHeartbeat 心跳消息
+    void OnHeartbeat(const Message& msgHeartbeat);
     
     ///\brief Follower代理写操作
-    void OnProxyMsgProp(const Message& msg);
+    ///\param msgProp Propose 消息
+    void OnProxyMsgProp(const Message& msgProp);
     
     ///\brief Follower代理读操作
-    void OnProxyMsgReadIndex(const Message& msg);
+    ///\param msgRead 读请求消息
+    void OnProxyMsgReadIndex(const Message& msgRead);
 
     ///\brief Follower处理Leader返回的读操作应答，启动项Client返回
-    void OnMsgReadIndexResp(const Message &msg);
+    ///\param msgReadResp 读请求的应答消息
+    void OnMsgReadIndexResp(const Message &msgReadResp);
 
     ///\brief Follower处理Leader发出的立即超时消息，启动竞选
-    void OnMsgTimeoutNow(const Message &msg);
+    ///\param msgTimeout 立即超时消息
+    void OnMsgTimeoutNow(const Message &msgTimeout);
 
     void OnSnapshot(const Message& msg);
 
-    ///\brief Follower和Candidates处理定时器消息
-    void OnTickElection(void);
-
-    ///\brief Leader处理定时消息
+    ///\brief Leader处理Tick定时消息
     void OnTickHeartbeat(void);
 
     ///\brief 投票并且计算的的票数
+    ///\param nRaftID 投票人
+    ///\param typeMsg 消息类型，是正式选举还是预选
+    ///\param bAccepted 是否投赞成票
+    ///\return 当前投赞成的票数
     int  Poll(uint32_t nRaftID, MessageType typeMsg, bool bAccepted);
 
     Message* CloneMessage(const Message& msg);
 
     ///\brief 处理 Msg
+    ///\param msg 要处理的消息
+    ///\attention 此时已经完成msg的合法性检查
     virtual void OnMsg(const Message& msg);
 
     ///\brief Follower处理 MsgHup
@@ -215,13 +251,24 @@ protected:
     void AddNode(uint32_t id);
     void RemoveNode(uint32_t id);
 
+    ///\brief 检查是否选举超时
+    ///\attention 此时检查的是ResetRandomizedElectionTimeout随机生成选举超时
+    ///\sa ResetRandomizedElectionTimeout
     bool PastElectionTimeout(void);
+
+    ///\brief 随机算法重置选举计时器
+    ///\attention 1~2倍的选举超时
     void ResetRandomizedElectionTimeout(void);
 
     void ResetProgress(uint32_t nRaftID, uint64_t u64Match, uint64_t u64Next);
-    void AbortLeaderTransfer();
-
+   
+    ///\brief 终止Leader角色转移动作
+    void AbortLeaderTransfer(void);
+    
+    ///\brief 日志追平后，立刻触发目标的选举流程
+    ///\param nToID 选举目标
     void SendTimeoutNow(uint32_t nToID);
+    
     void ResetPendingConf(void);
 public:
     uint32_t m_nVoteID;             ///< 当前投票目标的ID
