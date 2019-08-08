@@ -142,6 +142,20 @@ int CRaft::CheckVoted(uint32_t nRaftID)
     return nCheck;
 }
 
+void CRaft::ReadMessages(vector<Message*> &msgs)
+{
+    for (auto pMsg : msgs)
+        delete pMsg;
+    msgs.clear();
+
+    void *pMsg = m_pMsgQueue->Pop(0);
+    while (NULL != pMsg)
+    {
+        msgs.push_back(static_cast<Message*>(pMsg));
+        pMsg = m_pMsgQueue->Pop(0);
+    }
+}
+
 void CRaft::OnTick(void)
 {
     switch (m_stateRaft)
@@ -158,11 +172,6 @@ void CRaft::OnTick(void)
         m_pLogger->Fatalf(__FILE__, __LINE__, "supported state %d", m_stateRaft);
         break;
     }
-}
-
-Message* CRaft::CloneMessage(const Message& msg)
-{
-    return new Message(msg);
 }
 
 // CheckQuorumActive returns true if the quorum is active from
@@ -643,7 +652,7 @@ void CRaft::BecomeLeader(void)
     m_pLogger->Infof(__FILE__, __LINE__, "%x became leader at term %llu", m_pConfig->m_nRaftID, m_u64Term);
 }
 
-const char* CRaft::GetCampaignString(CampaignType typeCampaign)
+const char* CRaft::GetCampaignString(ECampaignType typeCampaign)
 {
     const char* pstrCampaigns[3] = {
         "campaignPreElection",
@@ -656,7 +665,7 @@ const char* CRaft::GetCampaignString(CampaignType typeCampaign)
     return pstrCampaign;
 }
 
-void CRaft::Campaign(CampaignType typeCampaign)
+void CRaft::Campaign(ECampaignType typeCampaign)
 {
     uint64_t u64Term;
     MessageType voteMsg;
@@ -987,7 +996,7 @@ void CRaft::OnMsgReadIndex(const Message &msg)
         // This would allow multiple reads to piggyback on the same message.
         if (m_pReadOnly->m_optMode == ReadOnlySafe)
         {
-            Message *pNewMsg = CloneMessage(msg);
+            Message *pNewMsg = CRaftUtil::CloneMessage(msg);
             m_pReadOnly->AddRequest(m_pRaftLog->GetCommitted(), pNewMsg);
             BcastHeartbeatWithCtx(pNewMsg->entries(0).data());
             return;
@@ -1005,7 +1014,7 @@ void CRaft::OnMsgReadIndex(const Message &msg)
             else
             {
                 //代理模式，先传到代理节点
-                Message *pNewMsg = CloneMessage(msg);
+                Message *pNewMsg = CRaftUtil::CloneMessage(msg);
                 pNewMsg->set_to(msg.from());
                 pNewMsg->set_type(MsgReadIndexResp);
                 pNewMsg->set_index(ri);
@@ -1049,7 +1058,7 @@ void CRaft::OnMsgProp(const Message &msg)
         return;
     }
 
-    Message *pNewMsg = CloneMessage(msg);
+    Message *pNewMsg = CRaftUtil::CloneMessage(msg);
     for (int i = 0; i < int(pNewMsg->entries_size()); ++i)
     {
         Entry *entry = pNewMsg->mutable_entries(i);
@@ -1355,7 +1364,7 @@ void CRaft::StepByFollower(const Message& msg)
         }
         else
         {
-            Message *pMsg = CloneMessage(msg);
+            Message *pMsg = CRaftUtil::CloneMessage(msg);
             pMsg->set_to(m_nLeaderID);
             SendMsg(pMsg);
         }
@@ -1400,9 +1409,9 @@ void CRaft::OnProxyMsgProp(const Message& msg)
 {
     if (m_nLeaderID != None)
     {
-        Message *pWriteMsg = CloneMessage(msg);
+        Message *pWriteMsg = CRaftUtil::CloneMessage(msg);
         m_listWrite.push_back(pWriteMsg);
-        Message *pMsg = CloneMessage(msg);
+        Message *pMsg = CRaftUtil::CloneMessage(msg);
         pMsg->set_to(m_nLeaderID);
         SendMsg(pMsg);
     }
@@ -1414,7 +1423,7 @@ void CRaft::OnProxyMsgReadIndex(const Message& msg)
         m_pLogger->Infof(__FILE__, __LINE__, "%x no leader at term %llu; dropping index reading msg", m_pConfig->m_nRaftID, m_u64Term);
     else
     {
-        Message *pMsg = CloneMessage(msg);
+        Message *pMsg = CRaftUtil::CloneMessage(msg);
         pMsg->set_to(m_nLeaderID);
         SendMsg(pMsg);
     }

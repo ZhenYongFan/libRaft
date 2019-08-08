@@ -117,9 +117,11 @@
     <ClInclude Include="TestRaft.h" />
     <ClInclude Include="TestRaftDlg.h" />
     <ClInclude Include="TestEventBaseFixtrue.h" />
+    <ClInclude Include="TestRaftFixtrue.h" />
     <ClInclude Include="TestRaftFrame.h" />
     <ClInclude Include="TestRaftLogFixture.h" />
     <ClInclude Include="TestRaftPaperFixture.h" />
+    <ClInclude Include="TestRaftUtil.h" />
     <ClInclude Include="TestSeqsFixture.h" />
     <ClInclude Include="TestUnstableLogFixture.h" />
   </ItemGroup>
@@ -136,9 +138,13 @@
     <ClCompile Include="TestRaft.cpp" />
     <ClCompile Include="TestRaftDlg.cpp" />
     <ClCompile Include="TestEventBaseFixtrue.cpp" />
+    <ClCompile Include="TestRaftFixtrue.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="TestRaftFrame.cpp" />
     <ClCompile Include="TestRaftLogFixture.cpp" />
     <ClCompile Include="TestRaftPaperFixture.cpp" />
+    <ClCompile Include="TestRaftUtil.cpp" />
     <ClCompile Include="TestSeqsFixture.cpp" />
     <ClCompile Include="TestUnstableLogFixture.cpp" />
   </ItemGroup>

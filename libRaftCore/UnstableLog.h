@@ -38,20 +38,31 @@ public:
 
     bool MaybeTerm(uint64_t u64Index, uint64_t  &u64Term);
 
+    ///\brief 部分日志持久化，从非持久化管理中移出
+    ///\param u64Index 日志号
+    ///\param u64Term 日志对应的任期号
+    ///\attention 如果索引号非法或者任期号不对应，则不执行日志移出操作
     void StableTo(uint64_t u64Index, uint64_t u64Term);
 
     void StableSnapTo(uint64_t u64Index);
 
+    ///\brief 本身数据复位，接受快照对象
+    ///\param snapshot 快照对象
     void Restore(const Snapshot& snapshot);
 
+    ///\brief 按索引号范围（闭区间）读取一个片段
+    ///\param u64Low 起始索引号
+    ///\param u64High 终止索引号
+    ///\param vecEntries 返回的日志数组
+    ///\attention 索引号范围必须是合法的范围，否则会调用日志的Fatalf接口
     void Slice(uint64_t u64Low, uint64_t u64High, EntryVec &vecEntries);
 protected:
     ///\brief 断言索引号范围的正确性
     void AssertCheckOutOfBounds(uint64_t u64Low, uint64_t u64High);
 public:
-    //the incoming unstable snapshot, if any.
-    Snapshot* m_pSnapshot;
+
+    Snapshot* m_pSnapshot; ///< 快照
     EntryVec m_vecEntries; ///< 写入内存但未持久化的日志
-    uint64_t m_u64Offset;  ///< 
+    uint64_t m_u64Offset;  ///< 第一个日志记录的索引号偏移
     CLogger *m_pLogger;    ///< 输出日志
 };

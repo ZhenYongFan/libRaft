@@ -14,6 +14,9 @@ using namespace raftpb;
 extern CNullLogger kDefaultLogger;
 #include "TestRaftFrame.h"
 #include "TestRaftPaperFixture.h"
+#include "TestRaftUtil.h"
+
+//stateMachine *nopStepper = new blackHole();
 
 CPPUNIT_TEST_SUITE_REGISTRATION(CTestRaftPaperFixture);
 
@@ -34,20 +37,6 @@ void CTestRaftPaperFixture::tearDown(void)
 {
 
 }
-#if 0
-#include <gtest/gtest.h>
-#include <math.h>
-#include "libraft.h"
-#include "util.h"
-#include "CRaft.h"
-#include "memory_storage.h"
-#include "default_logger.h"
-#include "progress.h"
-#include "raft_test_util.h"
-#include "read_only.h"
-
-extern stateMachine *nopStepper;
-#endif
 
 /*
 This file contains tests which verify that the scenarios described
@@ -1510,7 +1499,7 @@ void CTestRaftPaperFixture::TestFollowerAppendEntries(void)
 // Reference: section 5.3, figure 7
 void CTestRaftPaperFixture::TestLeaderSyncFollowerLog(void)
 {
-#if 0
+
     EntryVec ents;
     {
         Entry entry;
@@ -1657,8 +1646,8 @@ void CTestRaftPaperFixture::TestLeaderSyncFollowerLog(void)
 
         tests.push_back(ents);
     }
-    int i;
-    for (i = 0; i < tests.size(); ++i)
+
+    for (int i = 0; i < tests.size(); ++i)
     {
         EntryVec& t = tests[i];
 
@@ -1667,21 +1656,30 @@ void CTestRaftPaperFixture::TestLeaderSyncFollowerLog(void)
         peers.push_back(2);
         peers.push_back(3);
 
-        CRaftStorage *leaderStorage = new MemoryStorage(&kDefaultLogger);
         EntryVec appEntries = ents;
-        leaderStorage->Append(appEntries);
-        CRaft *leader = newTestRaft(1, peers, 10, 1, leaderStorage);
+        CRaftFrame *pLeaderFrame = newTestRaft(1, peers, 10, 1, appEntries);
+        CRaft *leader = pLeaderFrame->m_pRaftNode;
+        CRaftMemLog *pLeaderLog = dynamic_cast<CRaftMemLog *> (leader->m_pRaftLog);
+        //CRaftStorage *leaderStorage = new MemoryStorage(&kDefaultLogger);
+        
+        //leaderStorage->Append(appEntries);
+        //CRaft *leader = newTestRaft(1, peers, 10, 1, leaderStorage);
 
         {
+            
             HardState hs;
-            hs.set_commit(leader->raftLog_->lastIndex());
+            hs.set_commit(pLeaderLog->GetLastIndex());
             hs.set_term(term);
             leader->SetHardState(hs);
         }
 
-        CRaftStorage *followerStorage = new MemoryStorage(&kDefaultLogger);
-        followerStorage->Append(t);
-        CRaft *follower = newTestRaft(2, peers, 10, 1, followerStorage);
+//         CRaftStorage *followerStorage = new MemoryStorage(&kDefaultLogger);
+//         followerStorage->Append(t);
+//         CRaft *follower = newTestRaft(2, peers, 10, 1, followerStorage);
+
+        CRaftFrame *pFollowerFrame = newTestRaft(2, peers, 10, 1, t);
+        CRaft *follower = pFollowerFrame->m_pRaftNode;
+        CRaftMemLog *pFollowerLog = dynamic_cast<CRaftMemLog *> (follower->m_pRaftLog);
 
         {
             HardState hs;
@@ -1692,9 +1690,9 @@ void CTestRaftPaperFixture::TestLeaderSyncFollowerLog(void)
         // The second may have more up-to-date log than the first one, so the
         // first node needs the vote from the third node to become the leader.
         vector<stateMachine*> sts;
-        sts.push_back(new raftStateMachine(leader));
-        sts.push_back(new raftStateMachine(follower));
-        sts.push_back(nopStepper);
+        sts.push_back(new raftStateMachine(pLeaderFrame));
+        sts.push_back(new raftStateMachine(pFollowerFrame));
+        sts.push_back(new blackHole());
 
         network *net = newNetwork(sts);
         {
@@ -1729,9 +1727,14 @@ void CTestRaftPaperFixture::TestLeaderSyncFollowerLog(void)
             net->send(&msgs);
         }
 
-        CPPUNIT_ASSERT_EQUAL(raftLogString(leader->raftLog_), raftLogString(follower->raftLog_)) << "i: " << i;
+        CPPUNIT_ASSERT_EQUAL(raftLogString(pLeaderLog), raftLogString(pFollowerLog));
+        delete net;
+        for (auto pStateMachine: sts)
+        {
+            delete pStateMachine;
+        }
     }
-#endif
+
 }
 
 // TestVoteRequest tests that the vote request includes information about the candidate’s log

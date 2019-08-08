@@ -248,6 +248,11 @@ string CRaftUtil::JoinStrings(const vector<string>& strPeers, const string &strS
     return strJoins;
 }
 
+Message* CRaftUtil::CloneMessage(const Message& msg)
+{
+    return new Message(msg);
+}
+
 // newLog returns log using the given storage. It recovers the log to the state
 // that it just commits and applies the latest snapshot.
 CRaftMemLog* newLog(CRaftStorage *pStorage, CLogger *pLogger)

@@ -14,18 +14,18 @@ class LIBRAFTCORE_API CRaft
 {
 public:
     ///\brief 发起选举的类型
-    enum CampaignType
+    enum ECampaignType
     {
         ///\brief 预选阶段，用下一任期号尝试预选，通过后才任期号加1开始正式选举
         ///\remark 防止当前节点的任期号无效增长
         ///\attention 当预选模式打开时生效
         campaignPreElection = 1,
 
-        // campaignElection represents a normal (time-based) election (the second phase
-        // of the election when Config.PreVote is true).
+        ///\brief 正式选举阶段，在指定时间内选举成功，或者超时
+        ///\attention 如果当前配置支持预选，则这相当于选举的第二阶段
         campaignElection = 2,
 
-        campaignTransfer = 3 ///< 由sa指定选举某个Raft，要求当前Leader在适当时机放弃领导者角色，支持该Raft选举
+        campaignTransfer = 3 ///< 由sa指定选举某个Raft，要求当前Leader在适当时机放弃领导者状态，支持该Raft选举
     };
 
 public:
@@ -44,10 +44,13 @@ public:
     virtual void Uninit(void);
 
     ///\brief 每个Tick执行的函数
+    ///\attention OnTick和Step是对外接口，需要考虑多线程安全问题,下面其他接口为偷懒模式下的单元测试接口
     virtual void OnTick(void);
     
     ///\brief 处理消息
     ///\param msg 消息体
+    ///\return 错误号
+    ///\attention OnTick和Step是对外接口，需要考虑多线程安全问题,下面其他接口为偷懒模式下的为单元测试接口
     virtual int  Step(const Message& msg);
 
     ///\brief Leader记录日志
@@ -55,25 +58,49 @@ public:
     ///\attention 考虑到单节点模式，在函数最后尝试提交操作
     void AppendEntry(EntryVec &entries);
     
-    ///\brief 变化角色（状态）
+    ///\brief 转化为正式Follower状态
     void BecomeFollower(uint64_t u64Term, uint32_t nLeaderID);
+
+    ///\brief 转化为正式选举状态
     void BecomeCandidate(void);
+    
+    ///\brief 转化为预选状态
     void BecomePreCandidate(void);
+
+    ///\brief 转换为Leader状态
+    ///\attention 防止误覆盖Follower日志，一旦转化为Leader，马上追加一条空日志
     void BecomeLeader(void);
+
+    ///\brief 状态变化时（除变为预选）重置相关属性
+    ///\param u64Term 新的任期号
+    void Reset(uint64_t u64Term);
 
     ///\brief Leader向Follower广播日志
     void BcastAppend(void);
 
-    ///\brief 取得当前状态机的角色
+    ///\brief 取得当前状态机的状态
     inline EStateType GetState(void)
     {
         return m_stateRaft;
+    }
+
+    ///\brief 取得当前选举对象
+    inline uint32_t GetVoted(void)
+    {
+        return m_nVoteID;
     }
 
     ///\brief 取得当前任期
     inline uint64_t GetTerm(void)
     {
         return m_u64Term;
+    }
+
+    ///\brief 设置当前任期
+    ///\attention 单元测试专用
+    inline void SetTerm(uint64_t u64Term)
+    {
+        m_u64Term = u64Term;
     }
 
     ///\brief 取得日志管理对象
@@ -91,8 +118,14 @@ public:
     ///\return 投票情况: 0 投赞成票；1 投反对票; 2 没有投票
     int CheckVoted(uint32_t nRaftID);
 
+    void ReadMessages(vector<Message*> &msgs);
+
     ///\brief Follower和Candidates处理Tick定时器消息
     void OnTickElection(void);
+
+    ///\brief Leader处理Tick定时消息
+    ///\attention 如果在一个选举超时周期内没有和Follower有效通讯，则放弃Leader状态
+    void OnTickHeartbeat(void);
 protected:
     
     void GetNodes(vector<uint32_t> &nodes);
@@ -133,10 +166,6 @@ protected:
     ///\attention 顺便发送Leader提交日志号和已同步日志索引号的最小值，方便Follower提交
     void SendHeartbeat(uint32_t nToID, const string &strContext);
 
-    ///\brief 角色变化时（除变为预选）重置相关属性
-    ///\param u64Term 新的任期号
-    void Reset(uint64_t u64Term);
-
     ///\brief Follower 处理消息
     ///\param msg 要处理的消息
     virtual void StepByFollower(const Message& msg);
@@ -152,11 +181,11 @@ protected:
     ///\brief 取得竞选类型对应的名称（一般用于调试）
     ///\param typeCampaign 竞选类型
     ///\return 对应竞选类型的名称
-    const char* GetCampaignString(CampaignType typeCampaign);
+    const char* GetCampaignString(ECampaignType typeCampaign);
 
     ///\brief 发起竞选
     ///\param typeCampaign 发起此次竞选的类型，预选，正式选举，sa指定
-    void Campaign(CampaignType typeCampaign);
+    void Campaign(ECampaignType typeCampaign);
     
     ///\brief Leader 尝试加大提交索引号
     ///\return 提交索引号变化标志 true 变大；false 没有变化
@@ -195,17 +224,12 @@ protected:
 
     void OnSnapshot(const Message& msg);
 
-    ///\brief Leader处理Tick定时消息
-    void OnTickHeartbeat(void);
-
     ///\brief 投票并且计算的的票数
     ///\param nRaftID 投票人
     ///\param typeMsg 消息类型，是正式选举还是预选
     ///\param bAccepted 是否投赞成票
     ///\return 当前投赞成的票数
     int  Poll(uint32_t nRaftID, MessageType typeMsg, bool bAccepted);
-
-    Message* CloneMessage(const Message& msg);
 
     ///\brief 处理 Msg
     ///\param msg 要处理的消息
@@ -218,7 +242,8 @@ protected:
     ///\brief 处理MsgVote和MsgPreVote
     virtual int OnMsgVote(const Message &msg);
 
-    ///\brief Leader处理法定人数检查，可能会修改角色为Follower
+    ///\brief Leader处理法定人数检查，可能会修改状态为Follower
+    ///\attention 如果和大部分Follower没有进行有效应答，则认为分裂，转为Follower
     virtual void OnMsgCheckQuorum(const Message &msg);
 
     ///\brief Leader处理写请求
@@ -262,7 +287,7 @@ protected:
 
     void ResetProgress(uint32_t nRaftID, uint64_t u64Match, uint64_t u64Next);
    
-    ///\brief 终止Leader角色转移动作
+    ///\brief 终止Leader状态转移动作
     void AbortLeaderTransfer(void);
     
     ///\brief 日志追平后，立刻触发目标的选举流程
@@ -273,7 +298,7 @@ protected:
 public:
     uint32_t m_nVoteID;             ///< 当前投票目标的ID
     uint32_t m_nLeaderID;           ///< 当前领导者ID
-    uint32_t m_nLeaderTransfereeID; ///< Leader 角色转移目标的ID
+    uint32_t m_nLeaderTransfereeID; ///< Leader 状态转移目标的ID
     EStateType m_stateRaft;         ///< 当前状态（领导者，追随者，竞选者，备选者） 
     uint64_t m_u64Term;             ///< 当前任期
     unordered_map<uint32_t, bool> m_mapVotes;         ///< 当前接受投票的状态

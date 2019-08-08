@@ -37,7 +37,31 @@ CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election
 {
     std::string strErrMsg;
     CRaftFrame *pFrame = new CRaftFrame();
-    if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, ents, strErrMsg))
+    if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, ents,NULL, strErrMsg))
+    {
+        delete pFrame;
+        pFrame = NULL;
+    }
+    return pFrame;
+}
+
+CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents, ConfigFun funCfg)
+{
+    std::string strErrMsg;
+    CRaftFrame *pFrame = new CRaftFrame();
+    if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, ents, funCfg, strErrMsg))
+    {
+        delete pFrame;
+        pFrame = NULL;
+    }
+    return pFrame;
+}
+
+CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, HardState &hs, ConfigFun funCfg)
+{
+    std::string strErrMsg;
+    CRaftFrame *pFrame = new CRaftFrame();
+    if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, hs, funCfg, strErrMsg))
     {
         delete pFrame;
         pFrame = NULL;
@@ -50,7 +74,7 @@ CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election
     std::string strErrMsg;
     CRaftFrame *pFrame = new CRaftFrame();
     EntryVec ents;
-    if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, ents, strErrMsg))
+    if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, ents,NULL, strErrMsg))
     {
         delete pFrame;
         pFrame = NULL;
@@ -72,10 +96,12 @@ CRaftFrame::~CRaftFrame(void)
    // Uninit();
 }
 
-bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, EntryVec &ents, std::string &strErrMsg)
+bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, EntryVec &ents, ConfigFun funCfg, std::string &strErrMsg)
 {
     bool bInit = false;
     m_pConfig = newTestConfig(id, peers, election, hb);
+    if (funCfg != NULL)
+        funCfg(m_pConfig);
     m_pMsgQueue = new CRaftQueue();
     if (m_pMsgQueue->Init(1024, strErrMsg))
     {
@@ -84,6 +110,29 @@ bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, 
         {
             m_pStorage = new CRaftMemStorage(pLogger);
             m_pStorage->Append(ents);
+            m_pRaftLog = newLog(m_pStorage, pLogger);
+            m_pRaftNode = new CRaft(m_pConfig, m_pRaftLog, m_pMsgQueue, m_pIoQueue, pLogger);
+            if (m_pRaftNode->Init(strErrMsg))
+                bInit = true;
+        }
+    }
+    return bInit;
+}
+
+bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, HardState &hs, ConfigFun funCfg, std::string &strErrMsg)
+{
+    bool bInit = false;
+    m_pConfig = newTestConfig(id, peers, election, hb);
+    if (funCfg != NULL)
+        funCfg(m_pConfig);
+    m_pMsgQueue = new CRaftQueue();
+    if (m_pMsgQueue->Init(1024, strErrMsg))
+    {
+        m_pIoQueue = new CRaftQueue();
+        if (m_pIoQueue->Init(1024, strErrMsg))
+        {
+            m_pStorage = new CRaftMemStorage(pLogger);
+            m_pStorage->SetHardState(hs);
             m_pRaftLog = newLog(m_pStorage, pLogger);
             m_pRaftNode = new CRaft(m_pConfig, m_pRaftLog, m_pMsgQueue, m_pIoQueue, pLogger);
             if (m_pRaftNode->Init(strErrMsg))

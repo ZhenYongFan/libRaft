@@ -55,6 +55,12 @@ public:
     ///\return 用于输出日志的节点列表字符串
     static std::string  JoinStrings(const vector<string>& strPeers, const string &sep);
 
+    ///\brief Clone一个Message
+    ///\param msg Clone的对象
+    ///\return Clone得到的Message对象指针，需要调用delete释放
+    ///\attention 将来也许会用智能指针替代
+    static Message* CloneMessage(const Message& msg);
+
 private:
     ///\brief 禁用的缺省构造
     CRaftUtil(void)

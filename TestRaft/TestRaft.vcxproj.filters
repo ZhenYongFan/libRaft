@@ -66,6 +66,12 @@
     <ClInclude Include="TestRaftPaperFixture.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="TestRaftUtil.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TestRaftFixtrue.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TestRaft.cpp">
@@ -108,6 +114,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="TestRaftPaperFixture.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TestRaftUtil.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TestRaftFixtrue.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

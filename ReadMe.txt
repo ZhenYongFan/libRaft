@@ -19,3 +19,6 @@ C++：支持C++11
 将gtest框架替换为cppunit，因为我的IDE不支持gtest的类与方法的解析
 添加KV服务的实现
 （即将）添加锁服务的实现
+
+5、Todo
+将核心代码与Protobuffer解耦
