@@ -53,6 +53,8 @@ public:
     ///\attention OnTick和Step是对外接口，需要考虑多线程安全问题,下面其他接口为偷懒模式下的为单元测试接口
     virtual int  Step(const Message& msg);
 
+    //下面的Public接口为了单元测试临时由protected改为public，代码重构完成采用单独测试派生类的方式改善
+
     ///\brief Leader记录日志
     ///\param entries 日志对象，自动添加任期号和日志索引号
     ///\attention 考虑到单节点模式，在函数最后尝试提交操作
@@ -84,10 +86,29 @@ public:
         return m_stateRaft;
     }
 
+    ///\brief 设置当前状态机的状态
+    ///\param stateRaft 要设置的状态
+    inline void SetState(EStateType stateRaft)
+    {
+        m_stateRaft = stateRaft;
+    }
+
+    ///\brief 取得当前Leader
+    inline uint32_t GetLeader(void)
+    {
+        return m_nLeaderID;
+    }
+
     ///\brief 取得当前选举对象
     inline uint32_t GetVoted(void)
     {
         return m_nVoteID;
+    }
+
+    ///\brief 取得当前选举对象
+    inline void SetVoted(uint32_t nVoteID)
+    {
+        m_nVoteID = nVoteID;
     }
 
     ///\brief 取得当前任期
@@ -126,6 +147,29 @@ public:
     ///\brief Leader处理Tick定时消息
     ///\attention 如果在一个选举超时周期内没有和Follower有效通讯，则放弃Leader状态
     void OnTickHeartbeat(void);
+
+    ///\brief 检查是否选举超时
+    ///\attention 此时检查的是ResetRandomizedElectionTimeout随机生成选举超时
+    ///\sa ResetRandomizedElectionTimeout
+    bool PastElectionTimeout(void);
+
+    ///\brief 随机算法重置选举计时器
+    ///\attention 1~2倍的选举超时
+    void ResetRandomizedElectionTimeout(void);
+
+    ///\brief Follower接受日志消息 \n
+    /// 1.消息的索引值小于当前节点已提交的值，则返回MsgAppResp消息类型，并返回已提交的位置 \n
+    /// 2.如果消息追加成功，则返回MsgAppResp消息类型，并返回最后一条记录的索引值 \n
+    /// 3.如果追加失败，则Reject设为true，并返回raftLog中最后一条记录的索引
+    void OnAppendEntries(const Message& msg);
+
+    ///\brief Follower接受心跳消息
+    ///\param msgHeartbeat 心跳消息
+    void OnHeartbeat(const Message& msgHeartbeat);
+
+    bool IsPromotable(void);
+    void DelProgress(uint32_t id);
+
 protected:
     
     void GetNodes(vector<uint32_t> &nodes);
@@ -195,17 +239,7 @@ protected:
     ///\brief 发起提交日志后的写操作，以便具体应用到对应服务中
     ///\param u64Committed 已经提交的日志号
     void CommitWrite(uint64_t u64Committed);
-
-    ///\brief Follower接受日志消息 \n
-    /// 1.消息的索引值小于当前节点已提交的值，则返回MsgAppResp消息类型，并返回已提交的位置 \n
-    /// 2.如果消息追加成功，则返回MsgAppResp消息类型，并返回最后一条记录的索引值 \n
-    /// 3.如果追加失败，则Reject设为true，并返回raftLog中最后一条记录的索引
-    void OnAppendEntries(const Message& msg);
-
-    ///\brief Follower接受心跳消息
-    ///\param msgHeartbeat 心跳消息
-    void OnHeartbeat(const Message& msgHeartbeat);
-    
+   
     ///\brief Follower代理写操作
     ///\param msgProp Propose 消息
     void OnProxyMsgProp(const Message& msgProp);
@@ -269,21 +303,10 @@ protected:
     ///\brief Leader每选举Tick数，检查一下法定人数，假设，在此期间应该有正常通讯
     bool CheckQuorumActive(void);
 
-    bool IsPromotable(void);
     bool Restore(const Snapshot& snapshot);
 
-    void DelProgress(uint32_t id);
     void AddNode(uint32_t id);
     void RemoveNode(uint32_t id);
-
-    ///\brief 检查是否选举超时
-    ///\attention 此时检查的是ResetRandomizedElectionTimeout随机生成选举超时
-    ///\sa ResetRandomizedElectionTimeout
-    bool PastElectionTimeout(void);
-
-    ///\brief 随机算法重置选举计时器
-    ///\attention 1~2倍的选举超时
-    void ResetRandomizedElectionTimeout(void);
 
     void ResetProgress(uint32_t nRaftID, uint64_t u64Match, uint64_t u64Next);
    

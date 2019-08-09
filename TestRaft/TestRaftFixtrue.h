@@ -51,4 +51,22 @@ public:
     void TestOldMessages(void);
     void TestProposal(void);
 
+    void TestProposalByProxy(void);
+    void TestCommit(void);
+
+    void TestPastElectionTimeout(void);
+    void TestHandleMsgApp(void);
+    void TestHandleHeartbeat(void);
+    void TestHandleHeartbeatResp(void);
+    void TestRaftFreesReadOnlyMem(void);
+    void TestMsgAppRespWaitReset(void);
+    void TestRecvMsgVote(void);
+    void TestStateTransition(void);
+    void TestAllServerStepdown(void);
+    void TestLeaderStepdownWhenQuorumActive(void);
+    void TestLeaderStepdownWhenQuorumLost(void);
+    void TestLeaderSupersedingWithCheckQuorum(void);
+    void TestLeaderElectionWithCheckQuorum(void);
+    void TestFreeStuckCandidateWithCheckQuorum(void);
+    void TestNonPromotableVoterWithCheckQuorum(void);
 };
