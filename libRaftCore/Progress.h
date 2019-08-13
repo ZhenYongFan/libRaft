@@ -71,6 +71,12 @@ public:
     ///\param statePro 状态
     void ResetState(ProgressState statePro);
 
+    ///\brief 取得当前状态
+    inline ProgressState GetState(void)
+    {
+        return state_;
+    }
+
     ///\brief 状态转换为Probe
     void BecomeProbe(void);
 

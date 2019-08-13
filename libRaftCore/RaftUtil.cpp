@@ -58,10 +58,11 @@ bool isDeepEqualEntries(const EntryVec& ents1, const EntryVec& ents2) {
   return true;
 }
 
-bool isDeepEqualNodes(const vector<uint64_t>& ns1, const vector<uint64_t>& ns2) {
+bool isDeepEqualNodes(const vector<uint32_t>& ns1, const vector<uint32_t>& ns2) {
   if (ns1.size() != ns2.size()) {
     return false;
   }
+
   int i;
   for (i = 0; i < ns1.size(); ++i) {
     if (ns1[i] != ns2[i]) {

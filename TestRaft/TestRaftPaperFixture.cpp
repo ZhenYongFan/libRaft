@@ -1729,10 +1729,6 @@ void CTestRaftPaperFixture::TestLeaderSyncFollowerLog(void)
 
         CPPUNIT_ASSERT_EQUAL(raftLogString(pLeaderLog), raftLogString(pFollowerLog));
         delete net;
-        for (auto pStateMachine: sts)
-        {
-            delete pStateMachine;
-        }
     }
 
 }

@@ -6,9 +6,10 @@ namespace raftpb
 {
     class Message;
 };
+class CLogger;
 
 ///\brief 一次读请求
-class CReadIndexStatus
+class LIBRAFTCORE_API CReadIndexStatus
 {
 public:
     ///\brief 构造函数，记录读消息和当时的对应的日志提交号
@@ -24,7 +25,7 @@ public:
 };
 
 ///\brief 记录读请求序列
-class CReadOnly 
+class LIBRAFTCORE_API CReadOnly
 {
 public:
   ///\brief 构造函数

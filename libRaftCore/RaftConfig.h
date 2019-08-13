@@ -53,6 +53,7 @@ public:
     int m_nTicksElection;  ///< 选举Tick数，建议是10倍的心跳Tick数
     int m_nMaxInfilght;    ///< 在乐观复制阶段用于限制追加消息的最大数量
     int m_nMaxMsgSize;     ///< 限制每个追加消息的最大值。0表示为至少为1
+    uint64_t m_u64Applied; ///< 应用索引号
     ReadOnlyOption m_optionReadOnly;  ///< ReadOnly的策略 ReadOnlySafe或者ReadOnlyLeaseBased
     bool m_bCheckQuorum;              ///< 是否检查leader和follower之间联通性
     bool m_bPreVote;                  ///< 是否有预选环节

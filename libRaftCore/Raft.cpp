@@ -62,8 +62,8 @@ bool CRaft::Init(string &strErrMsg)
     if (!isHardStateEqual(hs, kEmptyState))
         SetHardState(hs);
 
-    //if (config.applied > 0)
-    //    pRaftLog->AppliedTo(config.applied);
+    if (m_pConfig->m_u64Applied > 0)
+        m_pRaftLog->AppliedTo(m_pConfig->m_u64Applied);
 
     BecomeFollower(m_u64Term, None);
     vector<string> peerStrs;
@@ -142,11 +142,16 @@ int CRaft::CheckVoted(uint32_t nRaftID)
     return nCheck;
 }
 
-void CRaft::ReadMessages(vector<Message*> &msgs)
+void CRaft::FreeMessages(vector<Message*> &msgs)
 {
     for (auto pMsg : msgs)
         delete pMsg;
     msgs.clear();
+}
+
+void CRaft::ReadMessages(vector<Message*> &msgs)
+{
+    FreeMessages(msgs);
 
     void *pMsg = m_pMsgQueue->Pop(0);
     while (NULL != pMsg)

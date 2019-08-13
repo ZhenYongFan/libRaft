@@ -10,7 +10,7 @@ class CLogger;
 BEGIN_C_DECLS
 LIBRAFTCORE_API void limitSize(uint64_t maxSize, EntryVec &entries);
 
-LIBRAFTCORE_API bool isDeepEqualNodes(const vector<uint64_t>& ns1, const vector<uint64_t>& ns2);
+LIBRAFTCORE_API bool isDeepEqualNodes(const vector<uint32_t>& ns1, const vector<uint32_t>& ns2);
 LIBRAFTCORE_API bool isDeepEqualSnapshot(const Snapshot *s1, const Snapshot *s2);
 LIBRAFTCORE_API bool isDeepEqualEntries(const EntryVec& ents1, const EntryVec& ents2);
 LIBRAFTCORE_API bool isDeepEqualReadStates(const vector<CReadState*>& rs1, const vector<CReadState*>& rs2);

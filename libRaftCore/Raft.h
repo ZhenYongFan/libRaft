@@ -99,6 +99,12 @@ public:
         return m_nLeaderID;
     }
 
+    ///\brief 取得当前LeaderTransferee
+    inline uint32_t GetLeaderTransferee(void)
+    {
+        return m_nLeaderTransfereeID;
+    }
+
     ///\brief 取得当前选举对象
     inline uint32_t GetVoted(void)
     {
@@ -141,6 +147,8 @@ public:
 
     void ReadMessages(vector<Message*> &msgs);
 
+    void FreeMessages(vector<Message*> &msgs);
+
     ///\brief Follower和Candidates处理Tick定时器消息
     void OnTickElection(void);
 
@@ -170,9 +178,27 @@ public:
     bool IsPromotable(void);
     void DelProgress(uint32_t id);
 
+    void AddNode(uint32_t id);
+    void RemoveNode(uint32_t id);
+
+    ///\brief Leader 尝试加大提交索引号
+    ///\return 提交索引号变化标志 true 变大；false 没有变化
+    ///\attention 当提交号变化，会调用CommitWrite向具体服务提交写操作，还会向Follower发送广播日志的消息
+    bool MaybeCommit(void);
+
+    void ResetProgress(uint32_t nRaftID, uint64_t u64Match, uint64_t u64Next);
+
+    ///\brief 向指定节点发送日志
+    ///\param nToID 目标节点ID
+    void SendAppend(uint32_t nToID);
+
+    ///\brief 取得节点ID列表
+    ///\param nodes 节点ID列表
+    void GetNodes(vector<uint32_t> &nodes);
+
+    bool Restore(const Snapshot& snapshot);
 protected:
     
-    void GetNodes(vector<uint32_t> &nodes);
     bool HasLeader(void);
     void GetSoftState(CSoftState &ss);
     void GetHardState(HardState &hs);
@@ -192,10 +218,6 @@ protected:
     ///\brief 非代理写的Follower提交日志后，发起Apply日志的工作
     void SendApplyReady(uint64_t u64ApplyTo);
     
-    ///\brief 向指定节点发送日志
-    ///\param nToID 目标节点ID
-    void SendAppend(uint32_t nToID);
-
     ///\brief Leader向所有Follower发送心跳信息
     ///\attention 顺便发送读队列中最后一个请求的唯一标识，在ReadOnlySafe时处理读请求
     void BcastHeartbeat(void);
@@ -231,11 +253,6 @@ protected:
     ///\param typeCampaign 发起此次竞选的类型，预选，正式选举，sa指定
     void Campaign(ECampaignType typeCampaign);
     
-    ///\brief Leader 尝试加大提交索引号
-    ///\return 提交索引号变化标志 true 变大；false 没有变化
-    ///\attention 当提交号变化，会调用CommitWrite向具体服务提交写操作，还会向Follower发送广播日志的消息
-    bool MaybeCommit(void);
-
     ///\brief 发起提交日志后的写操作，以便具体应用到对应服务中
     ///\param u64Committed 已经提交的日志号
     void CommitWrite(uint64_t u64Committed);
@@ -303,13 +320,7 @@ protected:
     ///\brief Leader每选举Tick数，检查一下法定人数，假设，在此期间应该有正常通讯
     bool CheckQuorumActive(void);
 
-    bool Restore(const Snapshot& snapshot);
-
-    void AddNode(uint32_t id);
-    void RemoveNode(uint32_t id);
-
-    void ResetProgress(uint32_t nRaftID, uint64_t u64Match, uint64_t u64Next);
-   
+ 
     ///\brief 终止Leader状态转移动作
     void AbortLeaderTransfer(void);
     

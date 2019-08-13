@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "raft.pb.h"
 using namespace raftpb;
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -45,6 +46,30 @@ CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election
     return pFrame;
 }
 
+CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents, uint64_t u64Term)
+{
+    std::string strErrMsg;
+    CRaftFrame *pFrame = new CRaftFrame();
+    if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, ents, u64Term,NULL, strErrMsg))
+    {
+        delete pFrame;
+        pFrame = NULL;
+    }
+    return pFrame;
+}
+
+CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents, uint64_t u64Term, uint64_t u64Committed, uint64_t u64Applied)
+{
+    std::string strErrMsg;
+    CRaftFrame *pFrame = new CRaftFrame();
+    if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, ents, u64Term, u64Committed, u64Applied,NULL, strErrMsg))
+    {
+        delete pFrame;
+        pFrame = NULL;
+    }
+    return pFrame;
+}
+
 CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents, ConfigFun funCfg)
 {
     std::string strErrMsg;
@@ -82,6 +107,19 @@ CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election
     return pFrame;
 }
 
+CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, Snapshot &ss)
+{
+    std::string strErrMsg;
+    CRaftFrame *pFrame = new CRaftFrame();
+    EntryVec ents;
+    if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, ss, strErrMsg))
+    {
+        delete pFrame;
+        pFrame = NULL;
+    }
+    return pFrame;
+}
+
 CRaftFrame::CRaftFrame(void)
 {
     m_pMsgQueue = NULL;
@@ -94,6 +132,27 @@ CRaftFrame::CRaftFrame(void)
 CRaftFrame::~CRaftFrame(void)
 {
    // Uninit();
+}
+
+bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, Snapshot &ss, std::string &strErrMsg)
+{
+    bool bInit = false;
+    m_pConfig = newTestConfig(id, peers, election, hb);
+    m_pMsgQueue = new CRaftQueue();
+    if (m_pMsgQueue->Init(1024, strErrMsg))
+    {
+        m_pIoQueue = new CRaftQueue();
+        if (m_pIoQueue->Init(1024, strErrMsg))
+        {
+            m_pStorage = new CRaftMemStorage(pLogger);
+            m_pStorage->ApplySnapshot(ss);
+            m_pRaftLog = newLog(m_pStorage, pLogger);
+            m_pRaftNode = new CRaft(m_pConfig, m_pRaftLog, m_pMsgQueue, m_pIoQueue, pLogger);
+            if (m_pRaftNode->Init(strErrMsg))
+                bInit = true;
+        }
+    }
+    return bInit;
 }
 
 bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, EntryVec &ents, ConfigFun funCfg, std::string &strErrMsg)
@@ -110,6 +169,58 @@ bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, 
         {
             m_pStorage = new CRaftMemStorage(pLogger);
             m_pStorage->Append(ents);
+            m_pRaftLog = newLog(m_pStorage, pLogger);
+            m_pRaftNode = new CRaft(m_pConfig, m_pRaftLog, m_pMsgQueue, m_pIoQueue, pLogger);
+            if (m_pRaftNode->Init(strErrMsg))
+                bInit = true;
+        }
+    }
+    return bInit;
+}
+
+bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, EntryVec &ents, uint64_t u64Term, ConfigFun funCfg, std::string &strErrMsg)
+{
+    bool bInit = false;
+    m_pConfig = newTestConfig(id, peers, election, hb);
+    if (funCfg != NULL)
+        funCfg(m_pConfig);
+    m_pMsgQueue = new CRaftQueue();
+    if (m_pMsgQueue->Init(1024, strErrMsg))
+    {
+        m_pIoQueue = new CRaftQueue();
+        if (m_pIoQueue->Init(1024, strErrMsg))
+        {
+            m_pStorage = new CRaftMemStorage(pLogger);
+            m_pStorage->Append(ents);
+            m_pStorage->hardState_.set_term(u64Term);
+            m_pRaftLog = newLog(m_pStorage, pLogger);
+            m_pRaftNode = new CRaft(m_pConfig, m_pRaftLog, m_pMsgQueue, m_pIoQueue, pLogger);
+            if (m_pRaftNode->Init(strErrMsg))
+                bInit = true;
+        }
+    }
+    return bInit;
+}
+
+bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, EntryVec &ents, uint64_t u64Term, uint64_t u64Committed, uint64_t u64Applied, ConfigFun funCfg, std::string &strErrMsg)
+{
+    bool bInit = false;
+    m_pConfig = newTestConfig(id, peers, election, hb);
+    if (funCfg != NULL)
+        funCfg(m_pConfig);
+    m_pMsgQueue = new CRaftQueue();
+    if (m_pMsgQueue->Init(1024, strErrMsg))
+    {
+        m_pIoQueue = new CRaftQueue();
+        if (m_pIoQueue->Init(1024, strErrMsg))
+        {
+            m_pStorage = new CRaftMemStorage(pLogger);
+            
+            m_pStorage->entries_ = ents;
+            m_pStorage->hardState_.set_term(u64Term);
+            m_pStorage->hardState_.set_commit(u64Committed);
+
+            m_pConfig->m_u64Applied = u64Applied;
             m_pRaftLog = newLog(m_pStorage, pLogger);
             m_pRaftNode = new CRaft(m_pConfig, m_pRaftLog, m_pMsgQueue, m_pIoQueue, pLogger);
             if (m_pRaftNode->Init(strErrMsg))
@@ -144,6 +255,7 @@ bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, 
 
 void CRaftFrame::Uninit(void)
 {
+    FreeLogOpt();
     FreeMessages();
     if (NULL != m_pRaftNode)
     {
@@ -175,6 +287,38 @@ void CRaftFrame::Uninit(void)
     {
         delete m_pConfig;
         m_pConfig = NULL;
+    }
+}
+
+void CRaftFrame::ReadLogOpt(vector<CLogOperation*> &opts, int nType)
+{
+    FreeLogOpt(opts);
+    void *pOpt = m_pIoQueue->Pop(0);
+    while (NULL != pOpt)
+    {
+        CLogOperation *pLogOpt = static_cast<CLogOperation*>(pOpt);
+        if (nType == pLogOpt->m_nType)
+            opts.push_back(pLogOpt);
+        else
+            delete pLogOpt;
+        pOpt = m_pIoQueue->Pop(0);
+    }
+}
+
+void CRaftFrame::FreeLogOpt(vector<CLogOperation*> &opts)
+{
+    for (auto pOpt : opts)
+        delete pOpt;
+    opts.clear();
+}
+
+void CRaftFrame::FreeLogOpt(void)
+{
+    void *pOpt = m_pIoQueue->Pop(0);
+    while (NULL != pOpt)
+    {
+        delete pOpt;
+        pOpt = m_pIoQueue->Pop(0);
     }
 }
 

@@ -15,6 +15,7 @@ CRaftConfig::CRaftConfig(void)
     m_bCheckQuorum = true;
     m_bPreVote = true;
     m_nRaftID = 0;
+    m_u64Applied = 0;
     m_optionReadOnly = ReadOnlySafe;
 }
 

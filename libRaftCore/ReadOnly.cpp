@@ -6,7 +6,6 @@ using namespace raftpb;
 #include "RaftLogger.h"
 #include "ReadOnly.h"
 
-
 CReadOnly::CReadOnly(ReadOnlyOption optMode, CLogger *pLogger)
     : m_optMode(optMode),
     m_pLogger(pLogger)
@@ -67,8 +66,8 @@ void CReadOnly::Advance(const Message& msgRead, vector<CReadIndexStatus*> *rss)
         if (strContext == *iter)
         {
             bFound = true;
-            m_mapPendingReadIndex.erase(m_mapPendingReadIndex.begin(),iterIndex);
-            m_listRead.erase(m_listRead.begin(), iter);
+            m_mapPendingReadIndex.erase(m_mapPendingReadIndex.begin(),++iterIndex);
+            m_listRead.erase(m_listRead.begin(), ++iter );
             break;
         }
     }
