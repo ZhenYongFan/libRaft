@@ -3,6 +3,10 @@
 #include "Progress.h"
 #include "RaftLogger.h"
 
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
+
 CProgress::CProgress(uint64_t next, int maxInfilght, CLogger *pLogger)
     : m_u64MatchLogIndex(0),
     m_u64NextLogIndex(next),
@@ -13,10 +17,12 @@ CProgress::CProgress(uint64_t next, int maxInfilght, CLogger *pLogger)
     ins_(maxInfilght, pLogger),
     m_pLogger(pLogger)
 {
+
 }
 
 CProgress::~CProgress()
 {
+
 }
 
 void CProgress::ResetState(ProgressState state)
@@ -36,7 +42,7 @@ void CProgress::BecomeProbe(void)
     {
         uint64_t pendingSnapshot = pendingSnapshot_;
         ResetState(ProgressStateProbe);
-        m_u64NextLogIndex = std::max(m_u64MatchLogIndex + 1, pendingSnapshot + 1);
+        m_u64NextLogIndex = max(m_u64MatchLogIndex + 1, pendingSnapshot + 1);
     }
     else
     {
@@ -106,7 +112,7 @@ bool CProgress::maybeDecrTo(uint64_t rejected, uint64_t last)
         return false;
     }
 
-    m_u64NextLogIndex = std::min(rejected, last + 1);
+    m_u64NextLogIndex = min(rejected, last + 1);
     if (m_u64NextLogIndex < 1)
         m_u64NextLogIndex = 1;
     Resume();

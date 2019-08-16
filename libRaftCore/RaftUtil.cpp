@@ -1,9 +1,9 @@
 #include "stdafx.h"
-#include "raft.pb.h"
-using namespace raftpb;
-
 #include "RaftUtil.h"
 #include "RaftMemLog.h"
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
 
 using namespace std;
 
@@ -11,7 +11,7 @@ const char* GetErrorString(int err) {
   return "";
 }
 
-bool isDeepEqualSnapshot(const Snapshot *s1, const Snapshot *s2) {
+bool isDeepEqualSnapshot(const CSnapshot *s1, const CSnapshot *s2) {
   if (s1 == NULL || s2 == NULL) {
     return false;
   }
@@ -22,14 +22,17 @@ bool isDeepEqualSnapshot(const Snapshot *s1, const Snapshot *s2) {
   if (s1->metadata().term() != s2->metadata().term()) {
     return false;
   }
-  if (s1->data() != s2->data()) {
+  if (s1->m_u32DatLen != s2->m_u32DatLen) {
     return false;
+  }
+  if (0 != memcmp(s1->m_pData,s2->m_pData,s1->m_u32DatLen)){
+      return false;
   }
 
   return true;
 }
 
-bool isDeepEqualEntry(const Entry& ent1, const Entry& ent2) {
+bool isDeepEqualEntry(const CRaftEntry& ent1, const CRaftEntry& ent2) {
   if (ent1.type() != ent2.type()) {
     return false;
   }
@@ -90,25 +93,25 @@ void limitSize(uint64_t maxSize, EntryVec &entries) {
   entries.erase(entries.begin() + limit, entries.end());
 }
 
-bool IsLocalMessage(const MessageType typeMsg)
+bool IsLocalMessage(const CMessage::EMessageType typeMsg)
 {
-    return (typeMsg == MsgHup
-        || typeMsg == MsgBeat
-        || typeMsg == MsgUnreachable
-        || typeMsg == MsgSnapStatus
-        || typeMsg == MsgCheckQuorum);
+    return (typeMsg == CMessage::MsgHup
+        || typeMsg == CMessage::MsgBeat
+        || typeMsg == CMessage::MsgUnreachable
+        || typeMsg == CMessage::MsgSnapStatus
+        || typeMsg == CMessage::MsgCheckQuorum);
 }
 
-bool IsResponseMessage(const MessageType typeMsg)
+bool IsResponseMessage(const CMessage::EMessageType typeMsg)
 {
-    return (typeMsg == MsgAppResp
-        || typeMsg == MsgVoteResp
-        || typeMsg == MsgHeartbeatResp
-        || typeMsg == MsgUnreachable
-        || typeMsg == MsgPreVoteResp);
+    return (typeMsg == CMessage::MsgAppResp
+        || typeMsg == CMessage::MsgVoteResp
+        || typeMsg == CMessage::MsgHeartbeatResp
+        || typeMsg == CMessage::MsgUnreachable
+        || typeMsg == CMessage::MsgPreVoteResp);
 }
 
-bool isHardStateEqual(const HardState& h1, const HardState& h2) {
+bool isHardStateEqual(const CHardState& h1, const CHardState& h2) {
   return h1.term() == h2.term() &&
          h1.vote() == h2.vote() &&
          h1.commit() == h2.commit();
@@ -122,7 +125,7 @@ bool isSoftStateEqual(const CSoftState& s1, const CSoftState& s2) {
   return s1.m_stateRaft == s2.m_stateRaft;
 }
 
-bool isEmptySnapshot(const Snapshot* snapshot) {
+bool isEmptySnapshot(const CSnapshot* snapshot) {
   if (snapshot == NULL) {
     return true;
   }
@@ -148,7 +151,7 @@ bool isDeepEqualReadStates(const vector<CReadState*>& rs1, const vector<CReadSta
   return true;
 }
 
-bool isDeepEqualMessage(const Message& msg1, const Message& msg2) {
+bool isDeepEqualMessage(const CMessage& msg1, const CMessage& msg2) {
   if (msg1.from() != msg2.from()) {
     return false;
   }
@@ -165,7 +168,7 @@ bool isDeepEqualMessage(const Message& msg1, const Message& msg2) {
   
   int i;
   for (i = 0; i < msg1.entries_size(); ++i) {
-    if (!isDeepEqualEntry(msg1.entries(i), msg2.entries(i))) {
+    if (!isDeepEqualEntry(*msg1.entries(i), *msg2.entries(i))) {
       return false;
     }
   }
@@ -175,20 +178,20 @@ bool isDeepEqualMessage(const Message& msg1, const Message& msg2) {
 int GetNumOfPendingConf(const EntryVec& entries)
 {
     int nNum = 0;
-    for (const Entry &entry : entries)
+    for (const CRaftEntry &entry : entries)
     {
-        if (EntryConfChange == entry.type())
+        if (CRaftEntry::eConfChange == entry.type())
             nNum ++ ;
     }
     return nNum;
 }
 
-MessageType VoteRespMsgType(MessageType typeMsg)
+CMessage::EMessageType VoteRespMsgType(CMessage::EMessageType typeMsg)
 {
-    if (typeMsg == MsgVote)
-        return MsgVoteResp;
+    if (typeMsg == CMessage::MsgVote)
+        return CMessage::MsgVoteResp;
     else
-        return MsgPreVoteResp;
+        return CMessage::MsgPreVoteResp;
 }
 
 const char *pstrTypeString[] = {
@@ -213,10 +216,10 @@ const char *pstrTypeString[] = {
     "MsgPreVoteResp"
 };
 
-void copyEntries(const Message& msg, EntryVec &entries)
+void copyEntries(const CMessage& msg, EntryVec &entries)
 {
     for (int i = 0; i < msg.entries_size(); ++i)
-        entries.push_back(msg.entries(i));
+        entries.push_back(*msg.entries(i));
 }
 
 const char* CRaftUtil::MsgType2String(int typeMsg)
@@ -227,7 +230,7 @@ const char* CRaftUtil::MsgType2String(int typeMsg)
         return "unknown msg";
 }
 
-string CRaftUtil::EntryString(const Entry& entry)
+string CRaftUtil::EntryString(const CRaftEntry& entry)
 {
     char tmp[100];
     snprintf(tmp, sizeof(tmp), "term:%llu, index:%llu, type:%d",
@@ -249,9 +252,9 @@ string CRaftUtil::JoinStrings(const vector<string>& strPeers, const string &strS
     return strJoins;
 }
 
-Message* CRaftUtil::CloneMessage(const Message& msg)
+CMessage* CRaftUtil::CloneMessage(const CMessage& msg)
 {
-    return new Message(msg);
+    return new CMessage(msg);
 }
 
 // newLog returns log using the given storage. It recovers the log to the state

@@ -2,10 +2,7 @@
 #include "libRaftCore.h"
 using namespace std;
 
-namespace raftpb
-{
-    class Message;
-};
+class CMessage;
 class CLogger;
 
 ///\brief 一次读请求
@@ -13,13 +10,15 @@ class LIBRAFTCORE_API CReadIndexStatus
 {
 public:
     ///\brief 构造函数，记录读消息和当时的对应的日志提交号
-    CReadIndexStatus(uint64_t u64CommitIndex, raftpb::Message *pReadIndexMsg)       
+    CReadIndexStatus(uint64_t u64CommitIndex, CMessage *pReadIndexMsg)       
     {
         m_u64CommitIndex = u64CommitIndex;
         m_pReadIndexMsg = pReadIndexMsg;
     }
 
-    raftpb::Message *m_pReadIndexMsg;   ///< 记录了对应的MsgReadIndex请求
+    ~CReadIndexStatus(void);
+
+    CMessage *m_pReadIndexMsg;   ///< 记录了对应的MsgReadIndex请求
     uint64_t m_u64CommitIndex;          ///< 该MsgReadIndex请求到达时，对应的已提交位置
     map<uint64_t, bool> m_mapAck;       ///< 记录了该MsgReadIndex相关的MsgHeartbeatResp响应的信息
 };
@@ -42,11 +41,11 @@ public:
   /// 2.判断该消息是否已经记录在pendingReadIndex中，如果已存在则直接返回\n
   /// 3.如果不存在，则维护到pendingReadIndex中，index是当前Leader已提交的位置，m是请求的消息\n
   /// 4.并将消息ID追加到readIndexQueue队列中
-  void AddRequest(uint64_t u64Committed, raftpb::Message *pMsgRead);
+  void AddRequest(uint64_t u64Committed, CMessage *pMsgRead);
   
-  int RecvAck(const raftpb::Message& msgRead);
+  int RecvAck(const CMessage& msgRead);
   
-  void Advance(const raftpb::Message& msgRead, vector<CReadIndexStatus*>* rss);
+  void Advance(const CMessage& msgRead, vector<CReadIndexStatus*>* rss);
 
   ///\brief 取得队列中最后一个消息
   std::string LastPendingRequestCtx(void);

@@ -1,8 +1,8 @@
 #include "stdafx.h"
-#include "raft.pb.h"
-using namespace raftpb;
-
 #include "UnstableLog.h"
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
 
 // maybeFirstIndex returns the index of the first possible entry in entries
 // if it has a snapshot.
@@ -92,12 +92,12 @@ void CUnstableLog::StableSnapTo(uint64_t u64Index)
     }
 }
 
-void CUnstableLog::Restore(const Snapshot& snapshot)
+void CUnstableLog::Restore(const CSnapshot& snapshot)
 {
     m_u64Offset = snapshot.metadata().index() + 1;
     m_vecEntries.clear();
     if (m_pSnapshot == NULL)
-        m_pSnapshot = new Snapshot();
+        m_pSnapshot = new CSnapshot();
     m_pSnapshot->CopyFrom(snapshot);
 }
 
@@ -127,7 +127,7 @@ void CUnstableLog::TruncateAndAppend(const EntryVec& entriesApp)
         // truncate to after and copy to u.entries then append
         if (m_pLogger != NULL)
             m_pLogger->Infof(__FILE__, __LINE__, "truncate the unstable entries before index %llu", u64After);
-        vector<Entry> vecEntries; //vector没有删除头尾的接口，此处必须使用临时变量
+        vector<CRaftEntry> vecEntries; //vector没有删除头尾的接口，此处必须使用临时变量
         Slice(m_u64Offset, u64After, vecEntries);
         m_vecEntries = vecEntries;
         m_vecEntries.insert(m_vecEntries.end(), entriesApp.begin(), entriesApp.end());

@@ -1,10 +1,10 @@
 #include "stdafx.h"
-#include "raft.pb.h"
-using namespace raftpb;
-
 #include <stdint.h>
 #include "RaftMemLog.h"
 #include "RaftUtil.h"
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
 
 CRaftMemLog::CRaftMemLog(CRaftStorage *pStorage, CLogger *pLogger)
     : m_pStorage(pStorage),
@@ -158,7 +158,7 @@ bool CRaftMemLog::MaybeCommit(uint64_t u64Index, uint64_t u64Term)
     return bCommit;
 }
 
-void CRaftMemLog::Restore(const Snapshot& snapshot)
+void CRaftMemLog::Restore(const CSnapshot& snapshot)
 {
     m_pLogger->Infof(__FILE__, __LINE__, "log [%s] starts to restore snapshot [index: %lu, term: %lu]",
         String().c_str(), snapshot.metadata().index(), snapshot.metadata().term());
@@ -166,7 +166,7 @@ void CRaftMemLog::Restore(const Snapshot& snapshot)
     m_unstablePart.Restore(snapshot);
 }
 
-int CRaftMemLog::InitialState(HardState &hs, ConfState &cs)
+int CRaftMemLog::InitialState(CHardState &hs, CConfState &cs)
 {
     return m_pStorage->InitialState(hs, cs);
 }
@@ -205,7 +205,7 @@ uint64_t CRaftMemLog::findConflict(const EntryVec& entries)
     {
         if (!IsMatchTerm(entries[i].index(), entries[i].term()))
         {
-            const Entry& entry = entries[i];
+            const CRaftEntry& entry = entries[i];
             uint64_t index = entry.index();
             uint64_t term = entry.term();
 
@@ -259,7 +259,7 @@ bool CRaftMemLog::hasNextEntries() {
   return m_pStorage->m_u64Committed + 1 > max(m_pStorage->m_u64Applied + 1, GetFirstIndex());
 }
 
-int CRaftMemLog::snapshot(Snapshot **snapshot)
+int CRaftMemLog::snapshot(CSnapshot **snapshot)
 {
     if (m_unstablePart.m_pSnapshot != NULL)
     {

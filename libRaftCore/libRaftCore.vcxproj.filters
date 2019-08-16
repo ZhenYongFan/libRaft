@@ -13,15 +13,61 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="services">
-      <UniqueIdentifier>{7be3b716-b294-412d-8e06-90d49bb2e7f7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="network">
-      <UniqueIdentifier>{2598256e-e044-404a-b8e8-677ff97e858b}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="libRaftCore.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="RaftQueue.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="RaftSemaphore.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="RaftConfig.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Progress.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Raft.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="RaftEntry.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="RaftMemLog.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="RaftMemStorage.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="RaftUtil.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ReadOnly.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="UnstableLog.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="libRaftCore.def">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="res\libRaftCore.rc2">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -30,13 +76,34 @@
     <ClInclude Include="targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="libRaftCore.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="RaftQueue.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="RaftSemaphore.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="RaftConfig.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="RaftLogger.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
     <ClInclude Include="Progress.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Raft.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="raft.pb.h">
+    <ClInclude Include="RaftDef.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="RaftEntry.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="RaftLog.h">
@@ -45,10 +112,7 @@
     <ClInclude Include="RaftMemLog.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="RaftQueue.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="RaftSemaphore.h">
+    <ClInclude Include="RaftMemStorage.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="RaftStorage.h">
@@ -60,166 +124,13 @@
     <ClInclude Include="ReadOnly.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="RocksDbStorage.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="UnstableLog.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="RaftConfig.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="RaftLogger.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="libRaftCore.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="RaftMemStorage.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="RaftDef.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Log4CxxLogger.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="services\KvRocksdbService.h">
-      <Filter>services</Filter>
-    </ClInclude>
-    <ClInclude Include="services\KvService.h">
-      <Filter>services</Filter>
-    </ClInclude>
-    <ClInclude Include="network\EventBase.h">
-      <Filter>network</Filter>
-    </ClInclude>
-    <ClInclude Include="network\EventSession.h">
-      <Filter>network</Filter>
-    </ClInclude>
-    <ClInclude Include="network\IoEventBase.h">
-      <Filter>network</Filter>
-    </ClInclude>
-    <ClInclude Include="network\ListenEventBase.h">
-      <Filter>network</Filter>
-    </ClInclude>
-    <ClInclude Include="network\RaftAdminClient.h">
-      <Filter>network</Filter>
-    </ClInclude>
-    <ClInclude Include="network\RaftClientPool.h">
-      <Filter>network</Filter>
-    </ClInclude>
-    <ClInclude Include="network\RaftClientSession.h">
-      <Filter>network</Filter>
-    </ClInclude>
-    <ClInclude Include="network\RaftIoBase.h">
-      <Filter>network</Filter>
-    </ClInclude>
-    <ClInclude Include="network\RaftServer.h">
-      <Filter>network</Filter>
-    </ClInclude>
-    <ClInclude Include="network\RaftSession.h">
-      <Filter>network</Filter>
-    </ClInclude>
-    <ClInclude Include="network\SequenceID.h">
-      <Filter>network</Filter>
-    </ClInclude>
-    <ClInclude Include="network\rpc.pb.h">
-      <Filter>network</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="libRaftCore.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="dllmain.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Progress.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Raft.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="raft.pb.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="RaftMemLog.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="RaftQueue.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="RaftSemaphore.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="RaftUtil.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="ReadOnly.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="RocksDbStorage.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="UnstableLog.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="RaftConfig.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="RaftMemStorage.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Log4CxxLogger.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="services\KvRocksdbService.cpp">
-      <Filter>services</Filter>
-    </ClCompile>
-    <ClCompile Include="network\EventBase.cpp">
-      <Filter>network</Filter>
-    </ClCompile>
-    <ClCompile Include="network\EventSession.cpp">
-      <Filter>network</Filter>
-    </ClCompile>
-    <ClCompile Include="network\IoEventBase.cpp">
-      <Filter>network</Filter>
-    </ClCompile>
-    <ClCompile Include="network\ListenEventBase.cpp">
-      <Filter>network</Filter>
-    </ClCompile>
-    <ClCompile Include="network\RaftAdminClient.cpp">
-      <Filter>network</Filter>
-    </ClCompile>
-    <ClCompile Include="network\RaftClientPool.cpp">
-      <Filter>network</Filter>
-    </ClCompile>
-    <ClCompile Include="network\RaftClientSession.cpp">
-      <Filter>network</Filter>
-    </ClCompile>
-    <ClCompile Include="network\RaftIoBase.cpp">
-      <Filter>network</Filter>
-    </ClCompile>
-    <ClCompile Include="network\RaftServer.cpp">
-      <Filter>network</Filter>
-    </ClCompile>
-    <ClCompile Include="network\RaftSession.cpp">
-      <Filter>network</Filter>
-    </ClCompile>
-    <ClCompile Include="network\SequenceID.cpp">
-      <Filter>network</Filter>
-    </ClCompile>
-    <ClCompile Include="network\rpc.pb.cpp">
-      <Filter>network</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="raft.proto" />
-    <None Include="network\rpc.proto">
-      <Filter>network</Filter>
-    </None>
+    <ResourceCompile Include="libRaftCore.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

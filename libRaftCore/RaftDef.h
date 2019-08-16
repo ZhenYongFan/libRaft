@@ -49,7 +49,7 @@ public:
     {
     }
 public:
-    uint32_t m_nLeaderID;  ///< 当前领导者ID
+    uint32_t m_nLeaderID;   ///< 当前领导者ID
     EStateType m_stateRaft; ///< 当前状态（领导者，追随者，竞选者，备选者） 
 };
 
@@ -95,8 +95,9 @@ public:
     CReadState *m_pOperation; ///< 读操作 或者写操作
     uint64_t m_u64ApplyTo;    ///< 即将应用到的日志号
 };
+#include "RaftEntry.h"
 
-typedef vector<Entry> EntryVec;
+typedef vector<CRaftEntry> EntryVec;
 
 #include "RaftLogger.h"
 #include "RaftStorage.h"

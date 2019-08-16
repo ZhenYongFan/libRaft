@@ -11,24 +11,24 @@ BEGIN_C_DECLS
 LIBRAFTCORE_API void limitSize(uint64_t maxSize, EntryVec &entries);
 
 LIBRAFTCORE_API bool isDeepEqualNodes(const vector<uint32_t>& ns1, const vector<uint32_t>& ns2);
-LIBRAFTCORE_API bool isDeepEqualSnapshot(const Snapshot *s1, const Snapshot *s2);
+LIBRAFTCORE_API bool isDeepEqualSnapshot(const CSnapshot *s1, const CSnapshot *s2);
 LIBRAFTCORE_API bool isDeepEqualEntries(const EntryVec& ents1, const EntryVec& ents2);
 LIBRAFTCORE_API bool isDeepEqualReadStates(const vector<CReadState*>& rs1, const vector<CReadState*>& rs2);
-LIBRAFTCORE_API bool isDeepEqualMessage(const Message& msg1, const Message& msg2);
-LIBRAFTCORE_API bool isHardStateEqual(const HardState& h1, const HardState& h2);
+LIBRAFTCORE_API bool isDeepEqualMessage(const CMessage& msg1, const CMessage& msg2);
+LIBRAFTCORE_API bool isHardStateEqual(const CHardState& h1, const CHardState& h2);
 LIBRAFTCORE_API bool isSoftStateEqual(const CSoftState& s1, const CSoftState& s2);
-LIBRAFTCORE_API bool isEmptySnapshot(const Snapshot* snapshot);
+LIBRAFTCORE_API bool isEmptySnapshot(const CSnapshot* snapshot);
 LIBRAFTCORE_API int GetNumOfPendingConf(const EntryVec& entries);
-LIBRAFTCORE_API MessageType VoteRespMsgType(MessageType typeMsg);
+LIBRAFTCORE_API CMessage::EMessageType VoteRespMsgType(CMessage::EMessageType typeMsg);
 
-LIBRAFTCORE_API bool IsLocalMessage(const MessageType typeMsg);
-LIBRAFTCORE_API bool IsResponseMessage(const MessageType typeMsg);
+LIBRAFTCORE_API bool IsLocalMessage(const CMessage::EMessageType typeMsg);
+LIBRAFTCORE_API bool IsResponseMessage(const CMessage::EMessageType typeMsg);
 
 // string util
 
 LIBRAFTCORE_API const char* GetErrorString(int nErrNo);
 
-LIBRAFTCORE_API void  copyEntries(const Message& msg, EntryVec &entries);
+LIBRAFTCORE_API void  copyEntries(const CMessage& msg, EntryVec &entries);
 
 LIBRAFTCORE_API CRaftMemLog* newLog(CRaftStorage *pStorage, CLogger *pLogger);
 
@@ -47,7 +47,7 @@ public:
     ///\brief 日志对象转化为可显示字符串，用于输出日志
     ///\param entry 日志对象
     ///\return 可显示字符串
-    static std::string  EntryString(const Entry& entry);
+    static std::string  EntryString(const CRaftEntry& entry);
 
     ///\brief 输出节点列表，用于输出日志
     ///\param strPeers 节点列表
@@ -59,7 +59,7 @@ public:
     ///\param msg Clone的对象
     ///\return Clone得到的Message对象指针，需要调用delete释放
     ///\attention 将来也许会用智能指针替代
-    static Message* CloneMessage(const Message& msg);
+    static CMessage* CloneMessage(const CMessage& msg);
 
 private:
     ///\brief 禁用的缺省构造

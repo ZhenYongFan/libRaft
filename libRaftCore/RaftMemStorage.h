@@ -19,23 +19,23 @@ public:
     virtual int SetCommitted(uint64_t u64Committed);
     virtual int SetApplied(uint64_t u64tApplied);
     int Term(uint64_t u64Index, uint64_t &u64Term);
-    int Entries(uint64_t lo, uint64_t hi, uint64_t maxSize, vector<Entry> &entries);
-    int GetSnapshot(Snapshot **snapshot);
-    int InitialState(HardState &hs, ConfState &cs);
-    int SetHardState(const HardState&);
+    int Entries(uint64_t lo, uint64_t hi, uint64_t maxSize, vector<CRaftEntry> &entries);
+    int GetSnapshot(CSnapshot **snapshot);
+    int InitialState(CHardState &hs, CConfState &cs);
+    int SetHardState(const CHardState&);
 
     int Append(const EntryVec& entries);
     int Compact(uint64_t compactIndex);
-    int ApplySnapshot(const Snapshot& snapshot);
-    int CreateSnapshot(uint64_t i, ConfState *cs, const string& data, Snapshot *ss);
+    int ApplySnapshot(const CSnapshot& snapshot);
+    int CreateSnapshot(uint64_t i, CConfState *cs, const string& data, CSnapshot *ss);
 
 private:
     uint64_t firstIndex();
     uint64_t lastIndex();
 
 public:
-    HardState hardState_;
-    Snapshot  *m_pSnapShot;
+    CHardState hardState_;
+    CSnapshot  *m_pSnapShot;
     // ents[i] has raft log position i+snapshot.Metadata.Index
     EntryVec entries_;
 

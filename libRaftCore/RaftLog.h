@@ -109,9 +109,9 @@ public:
     ///\param entries 取得的日志集合
     virtual void UnstableEntries(EntryVec &entries) = 0;
 
-    virtual int snapshot(Snapshot **snapshot) = 0;
+    virtual int snapshot(CSnapshot **snapshot) = 0;
 
-    virtual void Restore(const Snapshot& snapshot) = 0;
+    virtual void Restore(const CSnapshot& snapshot) = 0;
 
-    virtual int InitialState(HardState &hs, ConfState &cs) = 0;
+    virtual int InitialState(CHardState &hs, CConfState &cs) = 0;
 };

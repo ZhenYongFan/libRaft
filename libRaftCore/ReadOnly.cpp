@@ -1,10 +1,20 @@
 #include "stdafx.h"
-#include "raft.pb.h"
-using namespace raftpb;
-
 #include "RaftConfig.h"
 #include "RaftLogger.h"
 #include "ReadOnly.h"
+#include "RaftEntry.h"
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
+
+CReadIndexStatus::~CReadIndexStatus(void)
+{
+    if (m_pReadIndexMsg != NULL)
+    {
+        delete m_pReadIndexMsg;
+        m_pReadIndexMsg = NULL;
+    }
+}
 
 CReadOnly::CReadOnly(ReadOnlyOption optMode, CLogger *pLogger)
     : m_optMode(optMode),
@@ -19,10 +29,10 @@ CReadOnly::~CReadOnly(void)
     m_mapPendingReadIndex.clear();
 }
 
-void CReadOnly::AddRequest(uint64_t u64Committed, Message *pMsgRead)
+void CReadOnly::AddRequest(uint64_t u64Committed, CMessage *pMsgRead)
 {
     //读请求信息中加入Client、Session信息组成唯一标识
-    string strContext = pMsgRead->entries(0).data();
+    string strContext = pMsgRead->entries(0)->data();
     if (m_mapPendingReadIndex.find(strContext) == m_mapPendingReadIndex.end())
     {
         m_mapPendingReadIndex[strContext] = new CReadIndexStatus(u64Committed, pMsgRead);
@@ -35,7 +45,7 @@ void CReadOnly::AddRequest(uint64_t u64Committed, Message *pMsgRead)
 // 2.如果获取不到则返回0
 // 3.记录了该Follower节点返回的MsgHeartbeatResp响应的信息
 // 4.返回Follower响应的数量
-int CReadOnly::RecvAck(const Message& msgRead)
+int CReadOnly::RecvAck(const CMessage& msgRead)
 {
     int nAck = 0;
     auto iter = m_mapPendingReadIndex.find(msgRead.context());
@@ -51,7 +61,7 @@ int CReadOnly::RecvAck(const Message& msgRead)
 //1.遍历readIndex队列，如果能找到该消息的Context，则返回该消息及之前的所有记录rss，
 //并删除readIndex队列和pendingReadIndex中对应的记录
 //2.如果没有Context对应的消息ID，则返回空结果集
-void CReadOnly::Advance(const Message& msgRead, vector<CReadIndexStatus*> *rss)
+void CReadOnly::Advance(const CMessage& msgRead, vector<CReadIndexStatus*> *rss)
 {
     bool bFound = false;
     string strContext = msgRead.context();

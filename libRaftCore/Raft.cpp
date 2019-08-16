@@ -1,15 +1,16 @@
 #include "stdafx.h"
-#include "raft.pb.h"
-using namespace raftpb;
-
 #include "Raft.h"
 #include "RaftUtil.h"
 #include "ReadOnly.h"
 
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
+
 const static string kCampaignPreElection = "CampaignPreElection";
 const static string kCampaignElection = "CampaignElection";
 const static string kCampaignTransfer = "CampaignTransfer";
-HardState kEmptyState;
+CHardState kEmptyState;
 
 CRaft::CRaft(CRaftConfig *pConfig, CRaftLog *pRaftLog, CRaftQueue *pQueue, CRaftQueue *pIoQueue, CLogger *pLogger)
     : m_pConfig(pConfig),
@@ -36,12 +37,13 @@ CRaft::~CRaft(void)
         delete m_pReadOnly;
         m_pReadOnly = NULL;
     }
+    assert(m_mapProgress.empty());
 }
 
 bool CRaft::Init(string &strErrMsg)
 {
-    HardState hs;
-    ConfState cs;
+    CHardState hs;
+    CConfState cs;
     vector<uint32_t> peers;
     m_pConfig->GetPeers(peers);
 
@@ -86,7 +88,7 @@ bool CRaft::Init(string &strErrMsg)
 void CRaft::Uninit(void)
 {
     //释放对应节点的信息
-    for (auto iter :m_mapProgress)
+    for (auto iter : m_mapProgress)
         delete iter.second;
     m_mapProgress.clear();
     //释放写请求
@@ -101,7 +103,7 @@ void CRaft::GetSoftState(CSoftState &state)
     state.m_stateRaft = m_stateRaft;
 }
 
-void CRaft::GetHardState(HardState &stateHard)
+void CRaft::GetHardState(CHardState &stateHard)
 {
     stateHard.set_term(m_u64Term);
     stateHard.set_vote(m_nVoteID);
@@ -115,7 +117,7 @@ void CRaft::GetNodes(vector<uint32_t> &nodeIDs)
         nodeIDs.push_back(iter.first);
 }
 
-void CRaft::SetHardState(const HardState &stateHard)
+void CRaft::SetHardState(const CHardState &stateHard)
 {
     if (stateHard.commit() < m_pRaftLog->GetCommitted() || stateHard.commit() > m_pRaftLog->GetLastIndex())
     {
@@ -142,21 +144,21 @@ int CRaft::CheckVoted(uint32_t nRaftID)
     return nCheck;
 }
 
-void CRaft::FreeMessages(vector<Message*> &msgs)
+void CRaft::FreeMessages(vector<CMessage*> &msgs)
 {
     for (auto pMsg : msgs)
         delete pMsg;
     msgs.clear();
 }
 
-void CRaft::ReadMessages(vector<Message*> &msgs)
+void CRaft::ReadMessages(vector<CMessage*> &msgs)
 {
     FreeMessages(msgs);
 
     void *pMsg = m_pMsgQueue->Pop(0);
     while (NULL != pMsg)
     {
-        msgs.push_back(static_cast<Message*>(pMsg));
+        msgs.push_back(static_cast<CMessage*>(pMsg));
         pMsg = m_pMsgQueue->Pop(0);
     }
 }
@@ -209,27 +211,27 @@ int CRaft::GetQuorum(void)
 }
 
 // send persists state to stable storage and then sends to its mailbox.
-void CRaft::SendMsg(Message *pMsg)
+void CRaft::SendMsg(CMessage *pMsg)
 {
     pMsg->set_from(m_pConfig->m_nRaftID);
-    MessageType typeMsg = pMsg->type();
+    CMessage::EMessageType typeMsg = pMsg->type();
 
-    if (typeMsg == MsgVote || typeMsg == MsgVoteResp || typeMsg == MsgPreVote || typeMsg == MsgPreVoteResp)
+    if (typeMsg == CMessage::MsgVote || typeMsg == CMessage::MsgVoteResp || typeMsg == CMessage::MsgPreVote || typeMsg == CMessage::MsgPreVoteResp)
     {
         if (pMsg->term() == 0)
         {
             // All {pre-,}campaign messages need to have the term set when
             // sending.
-            // - MsgVote: m.Term is the term the node is campaigning for,
+            // - CMessage::MsgVote: m.Term is the term the node is campaigning for,
             //   non-zero as we increment the term when campaigning.
-            // - MsgVoteResp: m.Term is the new r.Term if the MsgVote was
-            //   granted, non-zero for the same reason MsgVote is
-            // - MsgPreVote: m.Term is the term the node will campaign,
+            // - CMessage::MsgVoteResp: m.Term is the new r.Term if the CMessage::MsgVote was
+            //   granted, non-zero for the same reason CMessage::MsgVote is
+            // - CMessage::MsgPreVote: m.Term is the term the node will campaign,
             //   non-zero as we use m.Term to indicate the next term we'll be
             //   campaigning for
-            // - MsgPreVoteResp: m.Term is the term received in the original
-            //   MsgPreVote if the pre-vote was granted, non-zero for the
-            //   same reasons MsgPreVote is
+            // - CMessage::MsgPreVoteResp: m.Term is the term received in the original
+            //   CMessage::MsgPreVote if the pre-vote was granted, non-zero for the
+            //   same reasons CMessage::MsgPreVote is
             m_pLogger->Fatalf(__FILE__, __LINE__, "term should be set when sending %s", CRaftUtil::MsgType2String(typeMsg));
         }
     }
@@ -239,11 +241,11 @@ void CRaft::SendMsg(Message *pMsg)
         {
             m_pLogger->Fatalf(__FILE__, __LINE__, "term should not be set when sending %s (was %llu)", CRaftUtil::MsgType2String(typeMsg), pMsg->term());
         }
-        // do not attach term to MsgProp, MsgReadIndex
+        // do not attach term to CMessage::MsgProp, CMessage::MsgReadIndex
         // proposals are a way to forward to the leader and
         // should be treated as local message.
-        // MsgReadIndex is also forwarded to leader.
-        if (typeMsg != MsgProp && typeMsg != MsgReadIndex)
+        // CMessage::MsgReadIndex is also forwarded to leader.
+        if (typeMsg != CMessage::MsgProp && typeMsg != CMessage::MsgReadIndex)
             pMsg->set_term(m_u64Term);
     }
     m_pMsgQueue->Push(pMsg);
@@ -296,7 +298,7 @@ void CRaft::SendAppend(uint32_t nToID)
         return;
     }
     //创建待发送的消息
-    Message *pMsg = new Message();
+    CMessage *pMsg = new CMessage();
     pMsg->set_to(nToID);
 
     //获取Next索引对应的记录的Term值
@@ -307,8 +309,8 @@ void CRaft::SendAppend(uint32_t nToID)
     int nErrorEntries = m_pRaftLog->GetEntries(pProgress->m_u64NextLogIndex, m_pConfig->m_nMaxMsgSize, entries);
     if (!SUCCESS(nErrorTerm) || !SUCCESS(nErrorEntries))
     {
-        //1.上述两次raftLog查找出现异常时(获取不到需要发送的Entry记录)，就会形成MsgSnap消息，将快照数据发送到指定节点。
-        //2.向该节点发送MsgSnap类型的消息
+        //1.上述两次raftLog查找出现异常时(获取不到需要发送的Entry记录)，就会形成CMessage::MsgSnap消息，将快照数据发送到指定节点。
+        //2.向该节点发送CMessage::MsgSnap类型的消息
         //3.将目标Follower节点对应的Progress切换成ProgressStateSnapshot状态
         if (!pProgress->m_bRecentActive)
         {
@@ -318,8 +320,8 @@ void CRaft::SendAppend(uint32_t nToID)
             return;
         }
 
-        pMsg->set_type(MsgSnap);
-        Snapshot *snapshot;
+        pMsg->set_type(CMessage::MsgSnap);
+        CSnapshot *snapshot;
         int err = m_pRaftLog->snapshot(&snapshot);
         if (!SUCCESS(err))
         {
@@ -335,7 +337,7 @@ void CRaft::SendAppend(uint32_t nToID)
         if (isEmptySnapshot(snapshot))
             m_pLogger->Fatalf(__FILE__, __LINE__, "need non-empty snapshot");
 
-        Snapshot *s = pMsg->mutable_snapshot();
+        CSnapshot *s = pMsg->mutable_snapshot();
         s->CopyFrom(*snapshot);
         uint64_t sindex = snapshot->metadata().index();
         uint64_t sterm = snapshot->metadata().term();
@@ -346,16 +348,11 @@ void CRaft::SendAppend(uint32_t nToID)
     }
     else
     {
-        pMsg->set_type(MsgApp);
+        pMsg->set_type(CMessage::MsgApp);
         pMsg->set_index(pProgress->m_u64NextLogIndex - 1);   //新日志条目之前的日志索引值
         pMsg->set_logterm(u64Term);                          //新日志条目之前的Term值
         pMsg->set_commit(m_pRaftLog->GetCommitted());        //Leader已经提交的日志的索引值
-
-        for (size_t i = 0; i < entries.size(); ++i)
-        {
-            Entry *entry = pMsg->add_entries();
-            entry->CopyFrom(entries[i]);
-        }
+        pMsg->set_entries(entries);
 
         if (entries.size() > 0)
         {
@@ -397,7 +394,7 @@ void CRaft::BcastHeartbeatWithCtx(const string &strContext)
     }
 }
 
-// SendHeartbeat sends an empty MsgApp
+// SendHeartbeat sends an empty CMessage::MsgApp
 void CRaft::SendHeartbeat(uint32_t nToID, const string &strContext)
 {
     // Attach the commit as min(to.matched, r.committed).
@@ -407,9 +404,9 @@ void CRaft::SendHeartbeat(uint32_t nToID, const string &strContext)
     // The leader MUST NOT forward the follower's commit to
     // an unmatched index.
     uint64_t u64Committed = min(m_mapProgress[nToID]->m_u64MatchLogIndex, m_pRaftLog->GetCommitted());
-    Message *pMsg = new Message();
+    CMessage *pMsg = new CMessage();
     pMsg->set_to(nToID);
-    pMsg->set_type(MsgHeartbeat);
+    pMsg->set_type(CMessage::MsgHeartbeat);
     pMsg->set_commit(u64Committed);
     pMsg->set_context(strContext);
     SendMsg(pMsg);
@@ -450,12 +447,12 @@ void CRaft::CommitWrite(uint64_t u64Committed)
         auto iter = m_listWrite.begin();
         for (; iter != m_listWrite.end(); iter++)
         {
-            Message *pMsg = *iter;
-            Entry *pEntry = pMsg->mutable_entries(0);
+            CMessage *pMsg = *iter;
+            CRaftEntry *pEntry = pMsg->entries(0);
             if (pEntry->index() <= u64Committed)
             {
                 if (pMsg->from() == None || pMsg->from() == m_pConfig->m_nRaftID)
-                    SendWriteReady(new CReadState(pEntry->index(), pMsg->entries(0).data()));
+                    SendWriteReady(new CReadState(pEntry->index(), pEntry->data()));
                 delete pMsg;
             }
             else
@@ -492,19 +489,25 @@ void CRaft::Reset(uint64_t u64Term)
     AbortLeaderTransfer();
     m_mapVotes.clear();
     
+    vector<uint32_t> anRaftIDs;
     for (auto &iter : m_mapProgress)
     {
         uint32_t nRaftID = iter.first;
+        anRaftIDs.push_back(nRaftID);
         CProgress *pProgress = iter.second;
         delete pProgress;
-        pProgress = new CProgress(m_pRaftLog->GetLastIndex() + 1, m_pConfig->m_nMaxInfilght, m_pLogger);
-        iter.second = pProgress;
+    }
+    m_mapProgress.clear();
+
+    for (auto nRaftID: anRaftIDs)
+    {
+        CProgress *pProgress = new CProgress(m_pRaftLog->GetLastIndex() + 1, m_pConfig->m_nMaxInfilght, m_pLogger);
         if (nRaftID == m_pConfig->m_nRaftID)
             pProgress->m_u64MatchLogIndex = m_pRaftLog->GetLastIndex();
+        m_mapProgress[nRaftID] = pProgress;
     }
 
     m_bPendingConf = false;
-
     ReadOnlyOption optMode = m_pReadOnly->m_optMode;
     delete m_pReadOnly;
     m_pReadOnly = new CReadOnly(optMode, m_pLogger);
@@ -530,21 +533,21 @@ void CRaft::AppendEntry(EntryVec &entries)
     MaybeCommit();
 }
 
-//由Follower和Candidate递增计数器，如果超时则发送MsgHup消息
+//由Follower和Candidate递增计数器，如果超时则发送CMessage::MsgHup消息
 void CRaft::OnTickElection(void)
 {
     m_nTicksElectionElapsed++;
     if (IsPromotable() && PastElectionTimeout())
     {
         m_nTicksElectionElapsed = 0;
-        Message msg;
+        CMessage msg;
         msg.set_from(m_pConfig->m_nRaftID);
-        msg.set_type(MsgHup);
+        msg.set_type(CMessage::MsgHup);
         Step(msg);
     }
 }
 
-// OnTickHeartbeat is run by leaders to send a MsgBeat after r.heartbeatTimeout.
+// OnTickHeartbeat is run by leaders to send a CMessage::MsgBeat after r.heartbeatTimeout.
 void CRaft::OnTickHeartbeat(void)
 {
     m_nTicksHeartbeatElapsed++; //递增心跳计时器
@@ -555,9 +558,9 @@ void CRaft::OnTickHeartbeat(void)
         m_nTicksElectionElapsed = 0;   //重置选举计时器，Leader节点不会主动发起选举
         if (m_pConfig->m_bCheckQuorum) //检测本选举周期内当前Leader节点是否与集群中的大多数节点连通
         {
-            Message msg;
+            CMessage msg;
             msg.set_from(m_pConfig->m_nRaftID);
-            msg.set_type(MsgCheckQuorum);
+            msg.set_type(CMessage::MsgCheckQuorum);
             Step(msg);//执行后可能角色转换为Follower
         }
         // If current leader cannot transfer leadership in electionTimeout, it becomes leader again.
@@ -568,13 +571,13 @@ void CRaft::OnTickHeartbeat(void)
     if (m_stateRaft != eStateLeader)
         return;
 
-    //心跳计时器超时，则发生MsgBeat消息，继续维持向其余节点发送心跳
+    //心跳计时器超时，则发生CMessage::MsgBeat消息，继续维持向其余节点发送心跳
     if (m_nTicksHeartbeatElapsed >= m_pConfig->m_nTicksHeartbeat)
     {
         m_nTicksHeartbeatElapsed = 0;  //重置心跳计时器
-        Message msg;
+        CMessage msg;
         msg.set_from(m_pConfig->m_nRaftID);
-        msg.set_type(MsgBeat);
+        msg.set_type(CMessage::MsgBeat);
         Step(msg); //发生心跳信息
     }
 }
@@ -652,7 +655,7 @@ void CRaft::BecomeLeader(void)
     
     //追加1条空日志
     entries.clear();
-    entries.push_back(Entry());
+    entries.push_back(CRaftEntry());
     AppendEntry(entries);
     m_pLogger->Infof(__FILE__, __LINE__, "%x became leader at term %llu", m_pConfig->m_nRaftID, m_u64Term);
 }
@@ -673,21 +676,21 @@ const char* CRaft::GetCampaignString(ECampaignType typeCampaign)
 void CRaft::Campaign(ECampaignType typeCampaign)
 {
     uint64_t u64Term;
-    MessageType voteMsg;
+    CMessage::EMessageType voteMsg;
     if (typeCampaign == campaignPreElection)
     {
         //将当前节点切换成PreCandidate状态，不增加Term值,防止离群节点Term值无效增加干扰集群的问题
         BecomePreCandidate();
         //预选RPCs发送的是下一个Term编号，而自己的真实Term并不增加
         u64Term = m_u64Term + 1;
-        voteMsg = MsgPreVote;
+        voteMsg = CMessage::MsgPreVote;
     }
     else
     {
         //将当前节点切换成Candidate状态，该方法会增加Term值
         BecomeCandidate();
         u64Term = m_u64Term;
-        voteMsg = MsgVote;
+        voteMsg = CMessage::MsgVote;
     }
 
     //选自己一票，并且统计当前节点收到同意的选票张数
@@ -703,7 +706,7 @@ void CRaft::Campaign(ECampaignType typeCampaign)
             BecomeLeader();
         return;
     }
-    //在进行Leader节点选举时，MsgPreVote或MsgVote消息会在Context字段中设置该特殊标识    
+    //在进行Leader节点选举时，CMessage::MsgPreVote或CMessage::MsgVote消息会在Context字段中设置该特殊标识    
     string strContext;
     if (typeCampaign == campaignTransfer)
         strContext = kCampaignTransfer;
@@ -717,7 +720,7 @@ void CRaft::Campaign(ECampaignType typeCampaign)
             m_pLogger->Infof(__FILE__, __LINE__, "%x [logterm: %llu, index: %llu] sent %s request to %x at term %llu",
                 m_pConfig->m_nRaftID, m_pRaftLog->GetLastTerm(), m_pRaftLog->GetLastIndex(), GetCampaignString(typeCampaign), nRaftID, m_u64Term);
 
-            Message *pMsg = new Message();
+            CMessage *pMsg = new CMessage();
             pMsg->set_term(u64Term);                      //候选人的任期号,如果是预选就是下一任编号
             pMsg->set_to(nRaftID);                        //目标
             pMsg->set_type(voteMsg);                      //请选（或预选）我
@@ -729,7 +732,7 @@ void CRaft::Campaign(ECampaignType typeCampaign)
     }
 }
 
-int CRaft::Poll(uint32_t nRaftID, MessageType typeMsg, bool bAccepted)
+int CRaft::Poll(uint32_t nRaftID, CMessage::EMessageType typeMsg, bool bAccepted)
 {
     if (bAccepted)
         m_pLogger->Infof(__FILE__, __LINE__, "%x received %s from %x at term %llu", m_pConfig->m_nRaftID, CRaftUtil::MsgType2String(typeMsg), nRaftID, m_u64Term);
@@ -748,12 +751,12 @@ int CRaft::Poll(uint32_t nRaftID, MessageType typeMsg, bool bAccepted)
     return nGranted;
 }
 
-int CRaft::Step(const Message& msg)
+int CRaft::Step(const CMessage& msg)
 {
     m_pLogger->Debugf(__FILE__, __LINE__, "msg %s %llu -> %llu, term:%llu",
         CRaftUtil::MsgType2String(msg.type()), msg.from(), msg.to(), m_u64Term);
     // Handle the message term, which may result in our stepping down to a follower.
-    Message *respMsg;
+    CMessage *respMsg;
     uint64_t u64Term = msg.term();
     int typeMsg = msg.type();
     uint32_t nFromID = msg.from();
@@ -766,7 +769,7 @@ int CRaft::Step(const Message& msg)
     {
         //当消息中Term大于本地Term说明是新一轮选举
         uint32_t leader = nFromID;
-        if (typeMsg == MsgVote || typeMsg == MsgPreVote)
+        if (typeMsg == CMessage::MsgVote || typeMsg == CMessage::MsgPreVote)
         {
             bool bForce = (msg.context() == kCampaignTransfer);
             bool inLease = (m_pConfig->m_bCheckQuorum 
@@ -783,11 +786,11 @@ int CRaft::Step(const Message& msg)
             }
             leader = None;
         }
-        if (typeMsg == MsgPreVote)
+        if (typeMsg == CMessage::MsgPreVote)
         {
             // Never change our term in response to a PreVote
         }
-        else if (typeMsg == MsgPreVoteResp && !msg.reject())
+        else if (typeMsg == CMessage::MsgPreVoteResp && !msg.reject())
         {
             // We send pre-vote requests with a term in our future. If the
             // pre-vote is granted, we will increment our term when we get a
@@ -799,7 +802,7 @@ int CRaft::Step(const Message& msg)
         {
             m_pLogger->Infof(__FILE__, __LINE__, "%x [term: %llu] received a %s message with higher term from %x [term: %llu]",
                 m_pConfig->m_nRaftID, m_u64Term, CRaftUtil::MsgType2String(typeMsg), nFromID, u64Term);
-            if (typeMsg == MsgApp || typeMsg == MsgHeartbeat || typeMsg == MsgSnap)
+            if (typeMsg == CMessage::MsgApp || typeMsg == CMessage::MsgHeartbeat || typeMsg == CMessage::MsgSnap)
                 BecomeFollower(u64Term, nFromID);
             else
                 BecomeFollower(u64Term, None);
@@ -807,24 +810,24 @@ int CRaft::Step(const Message& msg)
     }
     else if (u64Term < m_u64Term)
     {
-        if (m_pConfig->m_bCheckQuorum && (typeMsg == MsgHeartbeat || typeMsg == MsgApp))
+        if (m_pConfig->m_bCheckQuorum && (typeMsg == CMessage::MsgHeartbeat || typeMsg == CMessage::MsgApp))
         {
             // We have received messages from a leader at a lower term. It is possible
             // that these messages were simply delayed in the network, but this could
             // also mean that this node has advanced its term number during a network
             // partition, and it is now unable to either win an election or to rejoin
             // the majority on the old term. If checkQuorum is false, this will be
-            // handled by incrementing term numbers in response to MsgVote with a
+            // handled by incrementing term numbers in response to CMessage::MsgVote with a
             // higher term, but if checkQuorum is true we may not advance the term on
-            // MsgVote and must generate other messages to advance the term. The net
+            // CMessage::MsgVote and must generate other messages to advance the term. The net
             // result of these two features is to minimize the disruption caused by
             // nodes that have been removed from the cluster's configuration: a
             // removed node will send MsgVotes (or MsgPreVotes) which will be ignored,
-            // but it will not receive MsgApp or MsgHeartbeat, so it will not create
+            // but it will not receive CMessage::MsgApp or CMessage::MsgHeartbeat, so it will not create
             // disruptive term increases
-            respMsg = new Message();
+            respMsg = new CMessage();
             respMsg->set_to(nFromID);
-            respMsg->set_type(MsgAppResp);
+            respMsg->set_type(CMessage::MsgAppResp);
             SendMsg(respMsg);
         }
         else
@@ -840,12 +843,12 @@ int CRaft::Step(const Message& msg)
     return OK;
 }
 
-void CRaft::OnMsg(const Message& msg)
+void CRaft::OnMsg(const CMessage& msg)
 {
-    MessageType typeMsg = msg.type();
-    if(MsgHup == typeMsg)
+    CMessage::EMessageType typeMsg = msg.type();
+    if(CMessage::MsgHup == typeMsg)
         OnMsgHup(msg);
-    else if(MsgVote == typeMsg || MsgPreVote == typeMsg)
+    else if(CMessage::MsgVote == typeMsg || CMessage::MsgPreVote == typeMsg)
         OnMsgVote(msg);
     else
     {
@@ -860,8 +863,8 @@ void CRaft::OnMsg(const Message& msg)
     }
 }
 
-//选举计数器超时，Follower发送Hup消息，开启预选或者选举操作，向集群中其他节点发送MsgPreVote或者MsgVote消息
-int CRaft::OnMsgHup(const Message& msg)
+//选举计数器超时，Follower发送Hup消息，开启预选或者选举操作，向集群中其他节点发送CMessage::MsgPreVote或者CMessage::MsgVote消息
+int CRaft::OnMsgHup(const CMessage& msg)
 {
     if (m_stateRaft != eStateLeader)
     {
@@ -886,29 +889,29 @@ int CRaft::OnMsgHup(const Message& msg)
         else
             Campaign(campaignElection);
     }
-    else //如果当前节点是Leader，则忽略MsgHup类型的消息       
-        m_pLogger->Debugf(__FILE__, __LINE__, "%x ignoring MsgHup because already leader", m_pConfig->m_nRaftID);
+    else //如果当前节点是Leader，则忽略CMessage::MsgHup类型的消息       
+        m_pLogger->Debugf(__FILE__, __LINE__, "%x ignoring CMessage::MsgHup because already leader", m_pConfig->m_nRaftID);
     return OK;
 }
 
-int CRaft::OnMsgVote(const Message &msg)
+int CRaft::OnMsgVote(const CMessage &msg)
 {
-    Message * respMsg;
+    CMessage * respMsg;
     uint64_t term = msg.term();
-    MessageType type = msg.type();
+    CMessage::EMessageType type = msg.type();
     uint32_t from = msg.from();
-    // The m.Term > r.Term clause is for MsgPreVote. For MsgVote m.Term should always equal r.Term.
+    // The m.Term > r.Term clause is for CMessage::MsgPreVote. For CMessage::MsgVote m.Term should always equal r.Term.
     bool bCanVote = (m_nVoteID == None || term > m_u64Term || m_nVoteID == from);
     if (bCanVote && m_pRaftLog->IsUpToDate(msg.index(), msg.logterm()))
     {
         m_pLogger->Infof(__FILE__, __LINE__, "%x [logterm: %llu, index: %llu, vote: %x] cast %s for %x [logterm: %llu, index: %llu] at term %llu",
             m_pConfig->m_nRaftID, m_pRaftLog->GetLastTerm(), m_pRaftLog->GetLastIndex(), m_nVoteID, CRaftUtil::MsgType2String(type), from, msg.logterm(), msg.index(), m_u64Term);
-        respMsg = new Message();
+        respMsg = new CMessage();
         respMsg->set_to(from);
         respMsg->set_term(term);
         respMsg->set_type(VoteRespMsgType(type));
         SendMsg(respMsg);
-        if (type == MsgVote)
+        if (type == CMessage::MsgVote)
         {
             m_nTicksElectionElapsed = 0;
             m_nVoteID = from;
@@ -919,7 +922,7 @@ int CRaft::OnMsgVote(const Message &msg)
         m_pLogger->Infof(__FILE__, __LINE__,
             "%x [logterm: %llu, index: %llu, vote: %x] rejected %s from %x [logterm: %llu, index: %llu] at term %llu",
             m_pConfig->m_nRaftID, m_pRaftLog->GetLastTerm(), m_pRaftLog->GetLastIndex(), m_nVoteID, CRaftUtil::MsgType2String(type), from, msg.logterm(), msg.index(), m_u64Term);
-        respMsg = new Message();
+        respMsg = new CMessage();
         respMsg->set_to(from);
         respMsg->set_term(m_u64Term);
         respMsg->set_type(VoteRespMsgType(type));
@@ -929,20 +932,20 @@ int CRaft::OnMsgVote(const Message &msg)
     return OK;
 }
 
-void CRaft::StepByLeader(const Message& msg)
+void CRaft::StepByLeader(const CMessage& msg)
 {
     switch (msg.type())
     {
-    case MsgBeat: //本地消息
+    case CMessage::MsgBeat: //本地消息
         BcastHeartbeat();
         break;
-    case MsgCheckQuorum: //本地消息
+    case CMessage::MsgCheckQuorum: //本地消息
         OnMsgCheckQuorum(msg);
         break;
-    case MsgProp:
+    case CMessage::MsgProp:
         OnMsgProp(msg);
         break;
-    case MsgReadIndex:
+    case CMessage::MsgReadIndex:
         OnMsgReadIndex(msg);
         break;
     default:
@@ -952,7 +955,7 @@ void CRaft::StepByLeader(const Message& msg)
 }
 
 // All other message types require a progress for m.From (pr).
-void CRaft::OnMsgProgress(const Message &msg)
+void CRaft::OnMsgProgress(const CMessage &msg)
 {
     auto iter = m_mapProgress.find(msg.from());
     if (iter != m_mapProgress.end())
@@ -960,19 +963,19 @@ void CRaft::OnMsgProgress(const Message &msg)
         CProgress *pProgress = iter->second;
         switch (msg.type())
         {
-        case MsgAppResp:
+        case CMessage::MsgAppResp:
             OnAppResp(msg, pProgress);
             break;
-        case MsgHeartbeatResp:
+        case CMessage::MsgHeartbeatResp:
             OnHeartbeatResp(msg, pProgress);
             break;
-        case MsgSnapStatus:
+        case CMessage::MsgSnapStatus:
             OnMsgSnapStatus(msg, pProgress);
             break;
-        case MsgUnreachable:
+        case CMessage::MsgUnreachable:
             OnMsgUnreachable(msg, pProgress);
             break;
-        case MsgTransferLeader:
+        case CMessage::MsgTransferLeader:
             OnMsgTransferLeader(msg, pProgress);
             break;
         default:
@@ -985,7 +988,7 @@ void CRaft::OnMsgProgress(const Message &msg)
         m_pLogger->Debugf(__FILE__, __LINE__, "%x no progress available for %x", m_pConfig->m_nRaftID,msg.from());
 }
 
-void CRaft::OnMsgReadIndex(const Message &msg)
+void CRaft::OnMsgReadIndex(const CMessage &msg)
 {
     if (GetQuorum() > 1)
     {
@@ -1001,9 +1004,9 @@ void CRaft::OnMsgReadIndex(const Message &msg)
         // This would allow multiple reads to piggyback on the same message.
         if (m_pReadOnly->m_optMode == ReadOnlySafe)
         {
-            Message *pNewMsg = CRaftUtil::CloneMessage(msg);
+            CMessage *pNewMsg = CRaftUtil::CloneMessage(msg);
             m_pReadOnly->AddRequest(m_pRaftLog->GetCommitted(), pNewMsg);
-            BcastHeartbeatWithCtx(pNewMsg->entries(0).data());
+            BcastHeartbeatWithCtx(pNewMsg->entries(0)->data());
             return;
         }
         else if (m_pReadOnly->m_optMode == ReadOnlyLeaseBased)
@@ -1015,13 +1018,13 @@ void CRaft::OnMsgReadIndex(const Message &msg)
             }
             //本地模式直接应答
             if (msg.from() == None || msg.from() == m_pConfig->m_nRaftID)
-                SendReadReady(new CReadState(m_pRaftLog->GetCommitted(), msg.entries(0).data()));
+                SendReadReady(new CReadState(m_pRaftLog->GetCommitted(), msg.entries(0)->data()));
             else
             {
                 //代理模式，先传到代理节点
-                Message *pNewMsg = CRaftUtil::CloneMessage(msg);
+                CMessage *pNewMsg = CRaftUtil::CloneMessage(msg);
                 pNewMsg->set_to(msg.from());
-                pNewMsg->set_type(MsgReadIndexResp);
+                pNewMsg->set_type(CMessage::MsgReadIndexResp);
                 pNewMsg->set_index(ri);
                 SendMsg(pNewMsg);
             }
@@ -1029,11 +1032,11 @@ void CRaft::OnMsgReadIndex(const Message &msg)
     }
     else //单节点模式
     {
-        SendReadReady(new CReadState(m_pRaftLog->GetCommitted(), msg.entries(0).data()));
+        SendReadReady(new CReadState(m_pRaftLog->GetCommitted(), msg.entries(0)->data()));
     }
 }
 
-void CRaft::OnMsgCheckQuorum(const Message &)
+void CRaft::OnMsgCheckQuorum(const CMessage &)
 {
     if (!CheckQuorumActive())
     {
@@ -1042,12 +1045,12 @@ void CRaft::OnMsgCheckQuorum(const Message &)
     }
 }
 
-void CRaft::OnMsgProp(const Message &msg)
+void CRaft::OnMsgProp(const CMessage &msg)
 {
     if (msg.entries_size() == 0)
-        m_pLogger->Fatalf(__FILE__, __LINE__, "%x stepped empty MsgProp", m_pConfig->m_nRaftID);
+        m_pLogger->Fatalf(__FILE__, __LINE__, "%x stepped empty CMessage::MsgProp", m_pConfig->m_nRaftID);
     if (msg.entries_size() > 1)
-        m_pLogger->Fatalf(__FILE__, __LINE__, "%x stepped more then one entry of MsgProp", m_pConfig->m_nRaftID);
+        m_pLogger->Fatalf(__FILE__, __LINE__, "%x stepped more then one entry of CMessage::MsgProp", m_pConfig->m_nRaftID);
     if (m_mapProgress.find(m_pConfig->m_nRaftID) == m_mapProgress.end())
     {
         // If we are not currently a member of the range (i.e. this node
@@ -1063,20 +1066,20 @@ void CRaft::OnMsgProp(const Message &msg)
         return;
     }
 
-    Message *pNewMsg = CRaftUtil::CloneMessage(msg);
+    CMessage *pNewMsg = CRaftUtil::CloneMessage(msg);
     for (int i = 0; i < int(pNewMsg->entries_size()); ++i)
     {
-        Entry *entry = pNewMsg->mutable_entries(i);
-        if (entry->type() != EntryConfChange)
+        CRaftEntry *entry = pNewMsg->entries(i);
+        if (entry->type() != CRaftEntry::eConfChange)
             continue;
         if (m_bPendingConf)
         {
             m_pLogger->Infof(__FILE__, __LINE__,
                 "propose conf %s ignored since pending unapplied configuration",
                 CRaftUtil::EntryString(*entry).c_str());
-            Entry tmp;
-            tmp.set_type(EntryNormal);
-            entry->CopyFrom(tmp);
+            CRaftEntry tmp;
+            tmp.set_type(CRaftEntry::eNormal);
+            entry->Copy(tmp);
         }
         m_bPendingConf = true;
     }
@@ -1087,7 +1090,7 @@ void CRaft::OnMsgProp(const Message &msg)
     BcastAppend();
 }
 
-void CRaft::OnMsgSnapStatus(const Message &msg, CProgress * pProgress)
+void CRaft::OnMsgSnapStatus(const CMessage &msg, CProgress * pProgress)
 {
     uint32_t from = msg.from();
     if (pProgress->state_ != ProgressStateSnapshot)
@@ -1113,17 +1116,17 @@ void CRaft::OnMsgSnapStatus(const Message &msg, CProgress * pProgress)
     pProgress->Pause();
 }
 
-void CRaft::OnMsgUnreachable(const Message &msg, CProgress * pProgress)
+void CRaft::OnMsgUnreachable(const CMessage &msg, CProgress * pProgress)
 {
     // During optimistic replication, if the remote becomes unreachable,
-    // there is huge probability that a MsgApp is lost.
+    // there is huge probability that a CMessage::MsgApp is lost.
     if (pProgress->state_ == ProgressStateReplicate)
         pProgress->BecomeProbe();
     m_pLogger->Debugf(__FILE__, __LINE__, "%x failed to send message to %x because it is unreachable [%s]",
         m_pConfig->m_nRaftID, msg.from(), pProgress->GetInfoText().c_str());
 }
 
-void CRaft::OnMsgTransferLeader(const Message &msg,CProgress * pProgress)
+void CRaft::OnMsgTransferLeader(const CMessage &msg,CProgress * pProgress)
 {
     uint32_t leadTransferee = msg.from();
     uint32_t lastLeadTransferee = m_nLeaderTransfereeID;
@@ -1160,14 +1163,14 @@ void CRaft::OnMsgTransferLeader(const Message &msg,CProgress * pProgress)
         //日志追平后，立刻触发目标的选举流程
         SendTimeoutNow(leadTransferee);
         m_pLogger->Infof(__FILE__, __LINE__,
-            "%x sends MsgTimeoutNow to %x immediately as %x already has up-to-date log",
+            "%x sends CMessage::MsgTimeoutNow to %x immediately as %x already has up-to-date log",
             m_pConfig->m_nRaftID, leadTransferee, leadTransferee);
     }
     else //继续追日志
         SendAppend(leadTransferee);
 }
 
-void CRaft::OnAppResp(const Message& msg, CProgress *pProgress)
+void CRaft::OnAppResp(const CMessage& msg, CProgress *pProgress)
 {
     uint32_t from = msg.from();
     uint64_t u64Index = msg.index();
@@ -1215,7 +1218,7 @@ void CRaft::OnAppResp(const Message& msg, CProgress *pProgress)
                 && pProgress->m_u64MatchLogIndex == m_pRaftLog->GetLastIndex())
             {
                 m_pLogger->Infof(__FILE__, __LINE__,
-                    "%x sent MsgTimeoutNow to %x after received MsgAppResp", m_pConfig->m_nRaftID, msg.from());
+                    "%x sent CMessage::MsgTimeoutNow to %x after received CMessage::MsgAppResp", m_pConfig->m_nRaftID, msg.from());
                 //日志追平后，立刻触发目标的选举流程
                 SendTimeoutNow(msg.from());
             }
@@ -1224,7 +1227,7 @@ void CRaft::OnAppResp(const Message& msg, CProgress *pProgress)
 }
 
 //Leader状态时处理心跳回应消息
-void CRaft::OnHeartbeatResp(const Message& msg, CProgress *pProgress)
+void CRaft::OnHeartbeatResp(const CMessage& msg, CProgress *pProgress)
 {
     uint32_t from = msg.from();   
     pProgress->m_bRecentActive = true;
@@ -1247,39 +1250,40 @@ void CRaft::OnHeartbeatResp(const Message& msg, CProgress *pProgress)
     m_pReadOnly->Advance(msg, &rss);
     for (size_t i = 0; i < rss.size(); ++i)
     {
-        Message * pReadIndexMsg = rss[i]->m_pReadIndexMsg;
+        CMessage * pReadIndexMsg = rss[i]->m_pReadIndexMsg;
         if (pReadIndexMsg->from() == None || pReadIndexMsg->from() == m_pConfig->m_nRaftID)
         {
             //请求来自本地或者Client直接请求Leader
-            SendReadReady(new CReadState(rss[i]->m_u64CommitIndex, pReadIndexMsg->entries(0).data()));
+            SendReadReady(new CReadState(rss[i]->m_u64CommitIndex, pReadIndexMsg->entries(0)->data()));
         }
         else
         {
             //请求由Follower代理而来
-            Message * respMsg = new Message();
-            respMsg->set_type(MsgReadIndexResp);
+            CMessage * respMsg = new CMessage();
+            respMsg->set_type(CMessage::MsgReadIndexResp);
             respMsg->set_to(pReadIndexMsg->from());
             respMsg->set_index(rss[i]->m_u64CommitIndex);
-            respMsg->mutable_entries()->CopyFrom(pReadIndexMsg->entries());
+            respMsg->set_entries_from_msg(*pReadIndexMsg);
             SendMsg(respMsg);
         }
+        delete rss[i];
     }
 }
 
 // stepCandidate is shared by StateCandidate and StatePreCandidate; the difference is
-// whether they respond to MsgVoteResp or MsgPreVoteResp.
-void CRaft::StepByCandidate(const Message& msg)
+// whether they respond to CMessage::MsgVoteResp or CMessage::MsgPreVoteResp.
+void CRaft::StepByCandidate(const CMessage& msg)
 {
     // Only handle vote responses corresponding to our candidacy (while in
-    // StateCandidate, we may get stale MsgPreVoteResp messages in this term from
+    // StateCandidate, we may get stale CMessage::MsgPreVoteResp messages in this term from
     // our pre-candidate state).
-    MessageType voteRespType;
+    CMessage::EMessageType voteRespType;
     if (m_stateRaft == eStatePreCandidate)
-        voteRespType = MsgPreVoteResp;
+        voteRespType = CMessage::MsgPreVoteResp;
     else
-        voteRespType = MsgVoteResp;
+        voteRespType = CMessage::MsgVoteResp;
 
-    MessageType typeMsg = msg.type();
+    CMessage::EMessageType typeMsg = msg.type();
 
     if (typeMsg == voteRespType)
     {
@@ -1297,7 +1301,7 @@ void CRaft::StepByCandidate(const Message& msg)
             else 
             {
                 //如果是Candidate，在选举中收到半数以上的赞成票之后，会切换为Leader
-                //然后向集群中其他节点广播MsgApp消息
+                //然后向集群中其他节点广播CMessage::MsgApp消息
                 BecomeLeader();
                 BcastAppend();
             }
@@ -1312,23 +1316,23 @@ void CRaft::StepByCandidate(const Message& msg)
 
     switch (typeMsg)
     {
-    case MsgProp:
+    case CMessage::MsgProp:
         m_pLogger->Infof(__FILE__, __LINE__, "%x no leader at term %llu; dropping proposal", m_pConfig->m_nRaftID, m_u64Term);
         break;
-    case MsgApp:
+    case CMessage::MsgApp:
         BecomeFollower(m_u64Term, msg.from());
         OnAppendEntries(msg);
         break;
-    case MsgHeartbeat:
+    case CMessage::MsgHeartbeat:
         BecomeFollower(m_u64Term, msg.from());
         OnHeartbeat(msg);
         break;
-    case MsgSnap:
+    case CMessage::MsgSnap:
         BecomeFollower(msg.term(), msg.from());
         OnSnapshot(msg);
         break;
-    case MsgTimeoutNow:
-        m_pLogger->Debugf(__FILE__, __LINE__, "%x [term %llu state candidate] ignored MsgTimeoutNow from %x",
+    case CMessage::MsgTimeoutNow:
+        m_pLogger->Debugf(__FILE__, __LINE__, "%x [term %llu state candidate] ignored CMessage::MsgTimeoutNow from %x",
             m_pConfig->m_nRaftID, m_u64Term, msg.from());
         break;
     default:
@@ -1338,29 +1342,29 @@ void CRaft::StepByCandidate(const Message& msg)
     }
 }
 
-void CRaft::StepByFollower(const Message& msg)
+void CRaft::StepByFollower(const CMessage& msg)
 {
     switch (msg.type())
     {
-    case MsgProp:
+    case CMessage::MsgProp:
         OnProxyMsgProp(msg);
         break;
-    case MsgApp:
+    case CMessage::MsgApp:
         m_nTicksElectionElapsed = 0; //重置选举计时器，防止当前Follower发起新一轮选举
         m_nLeaderID = msg.from();    //保存当前的Leader节点ID
-        OnAppendEntries(msg);        //将MsgApp消息中携带的Entry记录追加到raftLog中，并且向Leader节点发送MsgAppResp消息
+        OnAppendEntries(msg);        //将CMessage::MsgApp消息中携带的Entry记录追加到raftLog中，并且向Leader节点发送CMessage::MsgAppResp消息
         break;
-    case MsgHeartbeat:
+    case CMessage::MsgHeartbeat:
         m_nTicksElectionElapsed = 0;
         m_nLeaderID = msg.from();
         OnHeartbeat(msg);
         break;
-    case MsgSnap:
+    case CMessage::MsgSnap:
         m_nTicksElectionElapsed = 0;
         m_nLeaderID = msg.from();
         OnSnapshot(msg);
         break;
-    case MsgTransferLeader:
+    case CMessage::MsgTransferLeader:
         if (m_nLeaderID == None)
         {
             m_pLogger->Infof(__FILE__, __LINE__,
@@ -1369,18 +1373,18 @@ void CRaft::StepByFollower(const Message& msg)
         }
         else
         {
-            Message *pMsg = CRaftUtil::CloneMessage(msg);
+            CMessage *pMsg = CRaftUtil::CloneMessage(msg);
             pMsg->set_to(m_nLeaderID);
             SendMsg(pMsg);
         }
         break;
-    case MsgTimeoutNow:
+    case CMessage::MsgTimeoutNow:
         OnMsgTimeoutNow(msg);
         break;
-    case MsgReadIndex:
+    case CMessage::MsgReadIndex:
         OnProxyMsgReadIndex(msg);
         break;
-    case MsgReadIndexResp:
+    case CMessage::MsgReadIndexResp:
         OnMsgReadIndexResp(msg);
         break;
     default:
@@ -1390,12 +1394,12 @@ void CRaft::StepByFollower(const Message& msg)
     }
 }
 
-void CRaft::OnMsgTimeoutNow(const Message &msg)
+void CRaft::OnMsgTimeoutNow(const CMessage &msg)
 {
     if (IsPromotable())
     {
         m_pLogger->Infof(__FILE__, __LINE__,
-            "%x [term %llu] received MsgTimeoutNow from %x and starts an election to get leadership.",
+            "%x [term %llu] received CMessage::MsgTimeoutNow from %x and starts an election to get leadership.",
             m_pConfig->m_nRaftID, m_u64Term, msg.from());
         // Leadership transfers never use pre-vote even if r.preVote is true; we
         // know we are not recovering from a partition so there is no need for the
@@ -1405,47 +1409,47 @@ void CRaft::OnMsgTimeoutNow(const Message &msg)
     else
     {
         m_pLogger->Infof(__FILE__, __LINE__,
-            "%x received MsgTimeoutNow from %x but is not promotable",
+            "%x received CMessage::MsgTimeoutNow from %x but is not promotable",
             m_pConfig->m_nRaftID, msg.from());
     }
 }
 
-void CRaft::OnProxyMsgProp(const Message& msg)
+void CRaft::OnProxyMsgProp(const CMessage& msg)
 {
     if (m_nLeaderID != None)
     {
-        Message *pWriteMsg = CRaftUtil::CloneMessage(msg);
+        CMessage *pWriteMsg = CRaftUtil::CloneMessage(msg);
         m_listWrite.push_back(pWriteMsg);
-        Message *pMsg = CRaftUtil::CloneMessage(msg);
+        CMessage *pMsg = CRaftUtil::CloneMessage(msg);
         pMsg->set_to(m_nLeaderID);
         SendMsg(pMsg);
     }
 }
 
-void CRaft::OnProxyMsgReadIndex(const Message& msg)
+void CRaft::OnProxyMsgReadIndex(const CMessage& msg)
 {
     if (m_nLeaderID == None)
         m_pLogger->Infof(__FILE__, __LINE__, "%x no leader at term %llu; dropping index reading msg", m_pConfig->m_nRaftID, m_u64Term);
     else
     {
-        Message *pMsg = CRaftUtil::CloneMessage(msg);
+        CMessage *pMsg = CRaftUtil::CloneMessage(msg);
         pMsg->set_to(m_nLeaderID);
         SendMsg(pMsg);
     }
 }
 
-void CRaft::OnMsgReadIndexResp(const Message &msg)
+void CRaft::OnMsgReadIndexResp(const CMessage &msg)
 {
     if (msg.entries_size() != 1)
-        m_pLogger->Errorf(__FILE__, __LINE__, "%x invalid format of MsgReadIndexResp from %x, entries count: %llu",
+        m_pLogger->Errorf(__FILE__, __LINE__, "%x invalid format of CMessage::MsgReadIndexResp from %x, entries count: %llu",
             m_pConfig->m_nRaftID, msg.from(), msg.entries_size());
     else
-        SendReadReady(new CReadState(msg.index(), msg.entries(0).data()));
+        SendReadReady(new CReadState(msg.index(), msg.entries(0)->data()));
 }
 
 // restore recovers the state machine from a snapshot. It restores the log and the
 // configuration of state machine.
-bool CRaft::Restore(const Snapshot& snapshot)
+bool CRaft::Restore(const CSnapshot& snapshot)
 {
     if (snapshot.metadata().index() <= m_pRaftLog->GetCommitted())
     {
@@ -1464,9 +1468,12 @@ bool CRaft::Restore(const Snapshot& snapshot)
         m_pConfig->m_nRaftID, m_pRaftLog->GetCommitted(), m_pRaftLog->GetLastIndex(), m_pRaftLog->GetLastTerm(),
         snapshot.metadata().index(), snapshot.metadata().term());
     m_pRaftLog->Restore(snapshot);
+
+    for (auto iter : m_mapProgress)
+        delete iter.second;
     m_mapProgress.clear();
 
-    for (int i = 0; i < snapshot.metadata().conf_state().nodes_size(); ++i)
+    for (uint32_t i = 0; i < snapshot.metadata().conf_state().nodes_size(); ++i)
     {
         uint32_t node = snapshot.metadata().conf_state().nodes(i);
         uint64_t match = 0;
@@ -1481,14 +1488,14 @@ bool CRaft::Restore(const Snapshot& snapshot)
     return true;
 }
 
-void CRaft::OnSnapshot(const Message& msg)
+void CRaft::OnSnapshot(const CMessage& msg)
 {
     uint64_t sindex = msg.snapshot().metadata().index();
     uint64_t sterm = msg.snapshot().metadata().term();
-    Message *resp = new Message;
+    CMessage *resp = new CMessage;
 
     resp->set_to(msg.from());
-    resp->set_type(MsgAppResp);
+    resp->set_type(CMessage::MsgAppResp);
     if (Restore(msg.snapshot()))
     {
         m_pLogger->Infof(__FILE__, __LINE__, "%x [commit: %d] restored snapshot [index: %d, term: %d]",
@@ -1504,29 +1511,29 @@ void CRaft::OnSnapshot(const Message& msg)
     SendMsg(resp);
 }
 
-void CRaft::OnHeartbeat(const Message& msg)
+void CRaft::OnHeartbeat(const CMessage& msg)
 {
     //同步Leader日志提交号
     bool bCommited = m_pRaftLog->CommitTo(msg.commit());
     if (bCommited)
         CommitWrite(m_pRaftLog->GetCommitted());
 
-    Message *resp = new Message();
+    CMessage *resp = new CMessage();
     resp->set_to(msg.from());
-    resp->set_type(MsgHeartbeatResp);
+    resp->set_type(CMessage::MsgHeartbeatResp);
     resp->set_context(msg.context());
     SendMsg(resp);
 }
 
-void CRaft::OnAppendEntries(const Message& msg)
+void CRaft::OnAppendEntries(const CMessage& msg)
 {
-    Message *pRespMsg = NULL;
+    CMessage *pRespMsg = NULL;
     //原则：已经提交的日志不能被覆盖
     if (msg.index() < m_pRaftLog->GetCommitted())
     {
-        pRespMsg = new Message();
+        pRespMsg = new CMessage();
         pRespMsg->set_to(msg.from());
-        pRespMsg->set_type(MsgAppResp);
+        pRespMsg->set_type(CMessage::MsgAppResp);
         pRespMsg->set_index(m_pRaftLog->GetCommitted());
     }
     else
@@ -1542,9 +1549,9 @@ void CRaft::OnAppendEntries(const Message& msg)
             if (u64LastCommitted != m_pRaftLog->GetCommitted())
                 CommitWrite(m_pRaftLog->GetCommitted());
 
-            pRespMsg = new Message();
+            pRespMsg = new CMessage();
             pRespMsg->set_to(msg.from());
-            pRespMsg->set_type(MsgAppResp);
+            pRespMsg->set_type(CMessage::MsgAppResp);
             pRespMsg->set_index(u64LastIndex);
         }
         else
@@ -1555,9 +1562,9 @@ void CRaft::OnAppendEntries(const Message& msg)
             m_pLogger->Debugf(__FILE__, __LINE__,
                 "%x [logterm: %llu, index: %llu] rejected msgApp [logterm: %llu, index: %llu] from %x",
                 m_pConfig->m_nRaftID, m_pRaftLog->ZeroTermOnErrCompacted(term, err), msg.index(), msg.logterm(), msg.index(), msg.from());
-            pRespMsg = new Message();
+            pRespMsg = new CMessage();
             pRespMsg->set_to(msg.from());
-            pRespMsg->set_type(MsgAppResp);
+            pRespMsg->set_type(CMessage::MsgAppResp);
             pRespMsg->set_index(msg.index());
             pRespMsg->set_reject(true);
             pRespMsg->set_rejecthint(m_pRaftLog->GetLastIndex());
@@ -1619,9 +1626,9 @@ void CRaft::RemoveNode(uint32_t nRaftID)
 
 void CRaft::SendTimeoutNow(uint32_t nRaftID)
 {
-    Message *pMsg = new Message();
+    CMessage *pMsg = new CMessage();
     pMsg->set_to(nRaftID);
-    pMsg->set_type(MsgTimeoutNow);
+    pMsg->set_type(CMessage::MsgTimeoutNow);
     SendMsg(pMsg);
 }
 

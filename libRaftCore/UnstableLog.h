@@ -48,7 +48,7 @@ public:
 
     ///\brief 本身数据复位，接受快照对象
     ///\param snapshot 快照对象
-    void Restore(const Snapshot& snapshot);
+    void Restore(const CSnapshot& snapshot);
 
     ///\brief 按索引号范围（闭区间）读取一个片段
     ///\param u64Low 起始索引号
@@ -61,7 +61,7 @@ protected:
     void AssertCheckOutOfBounds(uint64_t u64Low, uint64_t u64High);
 public:
 
-    Snapshot* m_pSnapshot; ///< 快照
+    CSnapshot* m_pSnapshot; ///< 快照
     EntryVec m_vecEntries; ///< 写入内存但未持久化的日志
     uint64_t m_u64Offset;  ///< 第一个日志记录的索引号偏移
     CLogger *m_pLogger;    ///< 输出日志

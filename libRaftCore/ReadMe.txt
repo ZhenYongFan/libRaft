@@ -1,42 +1,42 @@
 ﻿========================================================================
-    动态链接库：libRaftCore 项目概述
+    MICROSOFT 基础类库 : libRaftCore 项目概述
 ========================================================================
 
-1、将etcd核心代码由go语言转换为C++语言，方便主语言是C++的同好在项目中使用或者研究学习
-代码基础：https://github.com/lichuang/libraft
-文档基础：etcd的图书和系列解读文章,链接和标题如下
-https://item.jd.com/29992600690.html
-《etcd技术内幕》
-https://blog.csdn.net/skh2015java/article/details/86711109
-etcd中raft协议的消息(一) —— 简述raft中的所有类型消息
-https://blog.csdn.net/skh2015java/article/details/86711338
-etcd中raft协议的消息(二) —— 选举相关的消息(MsgHup、MsgPreVote/MsgPreVoteResp、MsgVote/MsgVoteResp）
-https://blog.csdn.net/skh2015java/article/details/86711973
-etcd中raft协议的消息(三) ——MspApp和MsgAppResp消息
-https://blog.csdn.net/skh2015java/article/details/86712668
-etcd中raft协议的消息(四) —— 心跳相关的消息(MsgBeat、MsgHeartbeat、MsgHeartbeatResp和MsgCheckQuorum）
-https://blog.csdn.net/skh2015java/article/details/86713745
-etcd中raft协议的消息(五)—— 客户端只读相关的消息(MsgReadIndex和MsgReadIndexResp消息)
-https://blog.csdn.net/skh2015java/article/details/86713864
-etcd中raft协议的消息(六)——客户端的写请求相关的消息(MsgProp消息)
-https://blog.csdn.net/skh2015java/article/details/86713924
-etcd中raft协议的消息(七)——快照复制消息(MsgSnap消息)
-https://www.jianshu.com/p/1496228df9a9
-Raft的PreVote实现机制
-https://cloud.tencent.com/developer/article/1394643
-深入浅出etcd之raft实现
-https://www.jianshu.com/p/27329f87c104
-Raft在etcd中的实现（二）节点发送消息和接收消息流程
-https://www.jianshu.com/p/16b5567c50a1
-Raft在etcd中的实现（三）选举流程
-https://www.infoq.cn/article/coreos-analyse-etcd/
-CoreOS 实战：剖析 etcd
-https://blog.csdn.net/xxb249/article/details/80787501
-Etcd源码分析-Raft实现
-https://blog.csdn.net/weixin_34409822/article/details/87800713
-Raft在etcd中的实现（五）snapshot相关
-https://blog.csdn.net/weixin_44534991/article/details/86495997
-开源一个千万级多组Raft库 - Dragonboat
-https://github.com/lni/dragonboat
-https://www.jianshu.com/p/be9eceb31656
-[转]让Raft变快100倍 - Dragonboat的写优化 
+
+应用程序向导已为您创建了此 libRaftCore DLL。此 DLL 不仅演示 Microsoft 基础类的基本使用方法，还可作为您编写 DLL 的起点。
+
+本文件概要介绍组成 libRaftCore DLL 的每个文件的内容。
+
+libRaftCore.vcxproj
+    这是使用应用程序向导生成的 VC++ 项目的主项目文件，其中包含生成该文件的 Visual C++ 的版本信息，以及有关使用应用程序向导选择的平台、配置和项目功能的信息。
+
+libRaftCore.vcxproj.filters
+    这是使用“应用程序向导”生成的 VC++ 项目筛选器文件。它包含有关项目文件与筛选器之间的关联信息。在 IDE 中，通过这种关联，在特定节点下以分组形式显示具有相似扩展名的文件。例如，“.cpp”文件与“源文件”筛选器关联。
+
+libRaftCore.cpp
+    这是包含 DllMain() 定义的主 DLL 源文件。
+
+libRaftCore.rc
+    这是程序使用的所有 Microsoft Windows 资源的列表。它包括 RES 子目录中存储的图标、位图和光标。此文件可以直接在 Microsoft Visual C++ 中进行编辑。
+
+res\libRaftCore.rc2
+    此文件包含不在 Microsoft Visual C++ 中进行编辑的资源。您应该将不可由资源编辑器编辑的所有资源放在此文件中。
+
+libRaftCore.def
+    此文件包含在 Microsoft Windows 中运行所必需的 DLL 的有关信息。它定义了 DLL 的名称和说明等参数，而且还从 DLL 导出函数。
+
+/////////////////////////////////////////////////////////////////////////////
+其他标准文件:
+
+StdAfx.h, StdAfx.cpp
+    这些文件用于生成名为 libRaftCore.pch 的预编译头 (PCH) 文件和名为 StdAfx.obj 的预编译类型文件。
+
+Resource.h
+    这是标准头文件，可用于定义新的资源 ID。Microsoft Visual C++ 将读取并更新此文件。
+
+/////////////////////////////////////////////////////////////////////////////
+其他注释:
+
+应用程序向导使用“TODO:”来指示应添加或自定义的源代码部分。
+
+/////////////////////////////////////////////////////////////////////////////

@@ -11,10 +11,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{A6BC20F5-806C-46D1-9C5D-CA95B68AAA51}</ProjectGuid>
-    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{08D32764-1515-4B71-8D49-FDEC24AE389C}</ProjectGuid>
     <RootNamespace>libRaftCore</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <Keyword>MFCDLLProj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -22,6 +22,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <UseOfMfc>Dynamic</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -29,6 +30,7 @@
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <UseOfMfc>Dynamic</UseOfMfc>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -53,16 +55,27 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;LIBRAFTCORE_DLL;LIBRAFTCORE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalOptions> /utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>../include;./</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>LIBRAFTCORE_DLL;LIBRAFTCORE_EXPORTS;_WINDOWS;_DEBUG;_AFXEXT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalIncludeDirectories>../include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>.\libRaftCore.def</ModuleDefinitionFile>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libEvent_core.lib;log4cxx.lib;Shlwapi.lib;Rpcrt4.lib;libprotobufd.lib;rocksdb.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Link>
+    <Midl>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0804</Culture>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -71,73 +84,27 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;LIBRAFTCORE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_WINDOWS;NDEBUG;_AFXEXT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>.\libRaftCore.def</ModuleDefinitionFile>
     </Link>
+    <Midl>
+      <MkTypLibCompatible>false</MkTypLibCompatible>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </Midl>
+    <ResourceCompile>
+      <Culture>0x0804</Culture>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="libRaftCore.h" />
-    <ClInclude Include="Log4CxxLogger.h" />
-    <ClInclude Include="network\EventBase.h" />
-    <ClInclude Include="network\EventSession.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="network\IoEventBase.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="network\ListenEventBase.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="network\RaftAdminClient.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="network\RaftClientPool.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="network\RaftClientSession.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="network\RaftIoBase.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="network\RaftServer.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="network\RaftSession.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="network\rpc.pb.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="network\SequenceID.h" />
-    <ClInclude Include="Progress.h" />
-    <ClInclude Include="Raft.h" />
-    <ClInclude Include="raft.pb.h" />
-    <ClInclude Include="RaftConfig.h" />
-    <ClInclude Include="RaftDef.h" />
-    <ClInclude Include="RaftLog.h" />
-    <ClInclude Include="RaftLogger.h" />
-    <ClInclude Include="RaftMemLog.h" />
-    <ClInclude Include="RaftMemStorage.h" />
-    <ClInclude Include="RaftQueue.h" />
-    <ClInclude Include="RaftSemaphore.h" />
-    <ClInclude Include="RaftStorage.h" />
-    <ClInclude Include="RaftUtil.h" />
-    <ClInclude Include="ReadOnly.h" />
-    <ClInclude Include="RocksDbStorage.h" />
-    <ClInclude Include="services\KvRocksdbService.h" />
-    <ClInclude Include="services\KvService.h" />
-    <ClInclude Include="stdafx.h" />
-    <ClInclude Include="targetver.h" />
-    <ClInclude Include="UnstableLog.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -149,51 +116,16 @@
       </PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="libRaftCore.cpp" />
-    <ClCompile Include="Log4CxxLogger.cpp" />
-    <ClCompile Include="network\EventBase.cpp" />
-    <ClCompile Include="network\EventSession.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="network\IoEventBase.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="network\ListenEventBase.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="network\RaftAdminClient.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="network\RaftClientPool.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="network\RaftClientSession.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="network\RaftIoBase.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="network\RaftServer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="network\RaftSession.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="network\rpc.pb.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="network\SequenceID.cpp" />
     <ClCompile Include="Progress.cpp" />
     <ClCompile Include="Raft.cpp" />
-    <ClCompile Include="raft.pb.cpp" />
     <ClCompile Include="RaftConfig.cpp" />
+    <ClCompile Include="RaftEntry.cpp" />
     <ClCompile Include="RaftMemLog.cpp" />
+    <ClCompile Include="RaftMemStorage.cpp" />
     <ClCompile Include="RaftQueue.cpp" />
     <ClCompile Include="RaftSemaphore.cpp" />
-    <ClCompile Include="RaftMemStorage.cpp" />
     <ClCompile Include="RaftUtil.cpp" />
     <ClCompile Include="ReadOnly.cpp" />
-    <ClCompile Include="RocksDbStorage.cpp" />
-    <ClCompile Include="services\KvRocksdbService.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -201,10 +133,32 @@
     <ClCompile Include="UnstableLog.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="network\rpc.proto">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </None>
-    <None Include="raft.proto" />
+    <None Include="libRaftCore.def" />
+    <None Include="res\libRaftCore.rc2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="libRaftCore.h" />
+    <ClInclude Include="Progress.h" />
+    <ClInclude Include="Raft.h" />
+    <ClInclude Include="RaftConfig.h" />
+    <ClInclude Include="RaftDef.h" />
+    <ClInclude Include="RaftEntry.h" />
+    <ClInclude Include="RaftLog.h" />
+    <ClInclude Include="RaftLogger.h" />
+    <ClInclude Include="RaftMemLog.h" />
+    <ClInclude Include="RaftMemStorage.h" />
+    <ClInclude Include="RaftQueue.h" />
+    <ClInclude Include="RaftSemaphore.h" />
+    <ClInclude Include="RaftStorage.h" />
+    <ClInclude Include="RaftUtil.h" />
+    <ClInclude Include="ReadOnly.h" />
+    <ClInclude Include="Resource.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+    <ClInclude Include="UnstableLog.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="libRaftCore.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,5 +1,8 @@
 #include "stdafx.h"
 #include "RaftQueue.h"
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
 
 CRaftQueue::CRaftQueue(void)
 {

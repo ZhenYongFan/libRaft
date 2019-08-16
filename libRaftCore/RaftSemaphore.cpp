@@ -1,6 +1,9 @@
 #include "stdafx.h"
 #include <time.h>
 #include "RaftSemaphore.h"
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
 
 CRaftSemaphore::CRaftSemaphore(void)
 {

@@ -27,7 +27,6 @@ public:
 
         campaignTransfer = 3 ///< 由sa指定选举某个Raft，要求当前Leader在适当时机放弃领导者状态，支持该Raft选举
     };
-
 public:
     ///\brief 构造函数
     CRaft(CRaftConfig *pConfig, CRaftLog *pRaftLog, CRaftQueue *pMsgQueue, CRaftQueue *pIoQueue, CLogger *pLogger);
@@ -51,7 +50,7 @@ public:
     ///\param msg 消息体
     ///\return 错误号
     ///\attention OnTick和Step是对外接口，需要考虑多线程安全问题,下面其他接口为偷懒模式下的为单元测试接口
-    virtual int  Step(const Message& msg);
+    virtual int  Step(const CMessage& msg);
 
     //下面的Public接口为了单元测试临时由protected改为public，代码重构完成采用单独测试派生类的方式改善
 
@@ -138,16 +137,16 @@ public:
 
     ///\brief 设置“硬”状态,即需要持久化的状态
     ///\param hs “硬”状态,即需要持久化的状态
-    void SetHardState(const HardState &hs);
+    void SetHardState(const CHardState &hs);
 
     ///\brief 判断某节点是否投票
     ///\param nRaftID 节点ID
     ///\return 投票情况: 0 投赞成票；1 投反对票; 2 没有投票
     int CheckVoted(uint32_t nRaftID);
 
-    void ReadMessages(vector<Message*> &msgs);
+    void ReadMessages(vector<CMessage*> &msgs);
 
-    void FreeMessages(vector<Message*> &msgs);
+    void FreeMessages(vector<CMessage*> &msgs);
 
     ///\brief Follower和Candidates处理Tick定时器消息
     void OnTickElection(void);
@@ -169,11 +168,11 @@ public:
     /// 1.消息的索引值小于当前节点已提交的值，则返回MsgAppResp消息类型，并返回已提交的位置 \n
     /// 2.如果消息追加成功，则返回MsgAppResp消息类型，并返回最后一条记录的索引值 \n
     /// 3.如果追加失败，则Reject设为true，并返回raftLog中最后一条记录的索引
-    void OnAppendEntries(const Message& msg);
+    void OnAppendEntries(const CMessage& msg);
 
     ///\brief Follower接受心跳消息
     ///\param msgHeartbeat 心跳消息
-    void OnHeartbeat(const Message& msgHeartbeat);
+    void OnHeartbeat(const CMessage& msgHeartbeat);
 
     bool IsPromotable(void);
     void DelProgress(uint32_t id);
@@ -196,18 +195,18 @@ public:
     ///\param nodes 节点ID列表
     void GetNodes(vector<uint32_t> &nodes);
 
-    bool Restore(const Snapshot& snapshot);
+    bool Restore(const CSnapshot& snapshot);
 protected:
     
     bool HasLeader(void);
     void GetSoftState(CSoftState &ss);
-    void GetHardState(HardState &hs);
+    void GetHardState(CHardState &hs);
 
     ///\brief 取得法定人数，即有效节点数的1/2 + 1
     int GetQuorum(void);
 
     ///\brief 发送Raft Peer之间的消息
-    void SendMsg(Message *pMsg);
+    void SendMsg(CMessage *pMsg);
 
     ///\brief Follower发起读请求
     void SendReadReady(CReadState *pReadState);
@@ -234,15 +233,15 @@ protected:
 
     ///\brief Follower 处理消息
     ///\param msg 要处理的消息
-    virtual void StepByFollower(const Message& msg);
+    virtual void StepByFollower(const CMessage& msg);
 
     ///\brief Candidate 处理消息
     ///\param msg 要处理的消息
-    virtual void StepByCandidate(const Message& msg);
+    virtual void StepByCandidate(const CMessage& msg);
 
     ///\brief Leader 处理消息
     ///\param msg 要处理的消息
-    virtual void StepByLeader(const Message& msg);
+    virtual void StepByLeader(const CMessage& msg);
 
     ///\brief 取得竞选类型对应的名称（一般用于调试）
     ///\param typeCampaign 竞选类型
@@ -259,63 +258,63 @@ protected:
    
     ///\brief Follower代理写操作
     ///\param msgProp Propose 消息
-    void OnProxyMsgProp(const Message& msgProp);
+    void OnProxyMsgProp(const CMessage& msgProp);
     
     ///\brief Follower代理读操作
     ///\param msgRead 读请求消息
-    void OnProxyMsgReadIndex(const Message& msgRead);
+    void OnProxyMsgReadIndex(const CMessage& msgRead);
 
     ///\brief Follower处理Leader返回的读操作应答，启动项Client返回
     ///\param msgReadResp 读请求的应答消息
-    void OnMsgReadIndexResp(const Message &msgReadResp);
+    void OnMsgReadIndexResp(const CMessage &msgReadResp);
 
     ///\brief Follower处理Leader发出的立即超时消息，启动竞选
     ///\param msgTimeout 立即超时消息
-    void OnMsgTimeoutNow(const Message &msgTimeout);
+    void OnMsgTimeoutNow(const CMessage &msgTimeout);
 
-    void OnSnapshot(const Message& msg);
+    void OnSnapshot(const CMessage& msg);
 
     ///\brief 投票并且计算的的票数
     ///\param nRaftID 投票人
     ///\param typeMsg 消息类型，是正式选举还是预选
     ///\param bAccepted 是否投赞成票
     ///\return 当前投赞成的票数
-    int  Poll(uint32_t nRaftID, MessageType typeMsg, bool bAccepted);
+    int  Poll(uint32_t nRaftID, CMessage::EMessageType typeMsg, bool bAccepted);
 
     ///\brief 处理 Msg
     ///\param msg 要处理的消息
     ///\attention 此时已经完成msg的合法性检查
-    virtual void OnMsg(const Message& msg);
+    virtual void OnMsg(const CMessage& msg);
 
     ///\brief Follower处理 MsgHup
-    virtual int OnMsgHup(const Message& msg);
+    virtual int OnMsgHup(const CMessage& msg);
 
     ///\brief 处理MsgVote和MsgPreVote
-    virtual int OnMsgVote(const Message &msg);
+    virtual int OnMsgVote(const CMessage &msg);
 
     ///\brief Leader处理法定人数检查，可能会修改状态为Follower
     ///\attention 如果和大部分Follower没有进行有效应答，则认为分裂，转为Follower
-    virtual void OnMsgCheckQuorum(const Message &msg);
+    virtual void OnMsgCheckQuorum(const CMessage &msg);
 
     ///\brief Leader处理写请求
-    virtual void OnMsgProp(const Message &msg);
+    virtual void OnMsgProp(const CMessage &msg);
     
     ///\brief Leader处理读请求
-    virtual void OnMsgReadIndex(const Message &msg);
+    virtual void OnMsgReadIndex(const CMessage &msg);
     
     ///\brief Leader处理涉及到组员的请求
-    void OnMsgProgress(const Message &msg);
+    void OnMsgProgress(const CMessage &msg);
     
     ///\brief Leader处理组员的心跳应答 
-    void OnHeartbeatResp(const Message& msg, CProgress *pProgress);
+    void OnHeartbeatResp(const CMessage& msg, CProgress *pProgress);
     
     ///\brief Leader处理组员的追加日志应答 
-    void OnAppResp(const Message& msg, CProgress *pProgress);
-    void OnMsgSnapStatus(const Message &msg, CProgress * pProgress);
-    void OnMsgUnreachable(const Message &msg, CProgress * pProgress);
+    void OnAppResp(const CMessage& msg, CProgress *pProgress);
+    void OnMsgSnapStatus(const CMessage &msg, CProgress * pProgress);
+    void OnMsgUnreachable(const CMessage &msg, CProgress * pProgress);
     
     ///\brief Leader处理组员的切换Leader的申请
-    void OnMsgTransferLeader(const Message &msg, CProgress * pProgress);
+    void OnMsgTransferLeader(const CMessage &msg, CProgress * pProgress);
     
     ///\brief Leader每选举Tick数，检查一下法定人数，假设，在此期间应该有正常通讯
     bool CheckQuorumActive(void);
@@ -340,7 +339,7 @@ public:
 
     CRaftQueue *m_pMsgQueue;         ///< Message缓冲区
     CRaftQueue *m_pIoQueue;          ///< 数据IO队列
-    std::list<Message *> m_listWrite;///< Leader和代理Follower正在执行的写任务
+    std::list<CMessage *> m_listWrite;///< Leader和代理Follower正在执行的写任务
     CReadOnly* m_pReadOnly;          ///< Leader 正在执行的读任务
 
     // New configuration is ignored if there exists unapplied configuration.

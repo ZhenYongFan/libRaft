@@ -1,16 +1,16 @@
 #include "stdafx.h"
-#include "raft.pb.h"
-using namespace raftpb;
-
 #include "RaftMemStorage.h"
 #include "RaftUtil.h"
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
 
 CRaftMemStorage::CRaftMemStorage(CLogger *pLogger)
-    : m_pSnapShot(new Snapshot())
+    : m_pSnapShot(new CSnapshot())
     , m_pLogger(pLogger)
 {
     // When starting from scratch populate the list with a dummy entry at term zero.
-    entries_.push_back(Entry());
+    entries_.push_back(CRaftEntry());
 }
 
 CRaftMemStorage::~CRaftMemStorage(void)
@@ -22,14 +22,14 @@ CRaftMemStorage::~CRaftMemStorage(void)
     }
 }
 
-int CRaftMemStorage::InitialState(HardState &hs, ConfState &cs)
+int CRaftMemStorage::InitialState(CHardState &hs, CConfState &cs)
 {
     hs = hardState_;
     cs = m_pSnapShot->metadata().conf_state();
     return OK;
 }
 
-int CRaftMemStorage::SetHardState(const HardState& hs)
+int CRaftMemStorage::SetHardState(const CHardState& hs)
 {
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
     hardState_ = hs;
@@ -89,7 +89,7 @@ int CRaftMemStorage::Term(uint64_t u64Index, uint64_t &u64Term)
     return OK;
 }
 
-int CRaftMemStorage::Entries(uint64_t u64Low, uint64_t u64High, uint64_t u64MaxSize, vector<Entry> &entries)
+int CRaftMemStorage::Entries(uint64_t u64Low, uint64_t u64High, uint64_t u64MaxSize, vector<CRaftEntry> &entries)
 {
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
     uint64_t u64Offset = entries_[0].index();
@@ -115,7 +115,7 @@ int CRaftMemStorage::Entries(uint64_t u64Low, uint64_t u64High, uint64_t u64MaxS
     return OK;
 }
 
-int CRaftMemStorage::GetSnapshot(Snapshot **snapshot)
+int CRaftMemStorage::GetSnapshot(CSnapshot **snapshot)
 {
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
     *snapshot = m_pSnapShot;
@@ -141,7 +141,7 @@ int CRaftMemStorage::Compact(uint64_t compactIndex)
 
     uint64_t i = compactIndex - offset;
     EntryVec entries;
-    Entry entry;
+    CRaftEntry entry;
     entry.set_index(entries_[i].index());
     entry.set_term(entries_[i].term());
     entries.push_back(entry);
@@ -155,7 +155,7 @@ int CRaftMemStorage::Compact(uint64_t compactIndex)
 
 // ApplySnapshot overwrites the contents of this Storage object with
 // those of the given snapshot.
-int CRaftMemStorage::ApplySnapshot(const Snapshot& snapshot)
+int CRaftMemStorage::ApplySnapshot(const CSnapshot& snapshot)
 {
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
 
@@ -170,7 +170,7 @@ int CRaftMemStorage::ApplySnapshot(const Snapshot& snapshot)
     
     //初始化内存中的日志
     entries_.clear();
-    Entry entry;
+    CRaftEntry entry;
     entry.set_index(snapshot.metadata().index());
     entry.set_term(snapshot.metadata().term());
     entries_.push_back(entry);
@@ -235,7 +235,7 @@ int CRaftMemStorage::Append(const EntryVec& entries)
 // can be used to reconstruct the state at that point.
 // If any configuration changes have been made since the last compaction,
 // the result of the last ApplyConfChange must be passed in.
-int CRaftMemStorage::CreateSnapshot(uint64_t u64Index, ConfState *pConfState, const string& data, Snapshot *ss)
+int CRaftMemStorage::CreateSnapshot(uint64_t u64Index, CConfState *pConfState, const string& data, CSnapshot *ss)
 {
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
 

@@ -18,17 +18,17 @@ public:
     {
     }
 
-    virtual int InitialState(HardState &hs, ConfState &cs) = 0;
+    virtual int InitialState(CHardState &hs, CConfState &cs) = 0;
     virtual int FirstIndex(uint64_t &u64Index) = 0;
     virtual int LastIndex(uint64_t &u64Index) = 0;
     virtual int SetCommitted(uint64_t u64Committed) = 0;
     virtual int SetApplied(uint64_t u64tApplied) = 0;
     virtual int Term(uint64_t u64Index, uint64_t &u64Term) = 0;
     virtual int Append(const EntryVec& entries) = 0;
-    virtual int Entries(uint64_t u64Low, uint64_t u64High, uint64_t u64MaxSize, vector<Entry> &entries) = 0;
-    virtual int SetHardState(const HardState&) = 0;
-    virtual int GetSnapshot(Snapshot **snapshot) = 0;
-    virtual int CreateSnapshot(uint64_t i, ConfState *cs, const string& data, Snapshot *ss) = 0;
+    virtual int Entries(uint64_t u64Low, uint64_t u64High, uint64_t u64MaxSize, vector<CRaftEntry> &entries) = 0;
+    virtual int SetHardState(const CHardState&) = 0;
+    virtual int GetSnapshot(CSnapshot **snapshot) = 0;
+    virtual int CreateSnapshot(uint64_t i, CConfState *cs, const string& data, CSnapshot *ss) = 0;
 public:
     ///\brief 提交的日志号
     uint64_t m_u64Committed;

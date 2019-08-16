@@ -5,6 +5,10 @@
 #include <assert.h>
 #include "RaftConfig.h"
 
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
+
 CRaftConfig::CRaftConfig(void)
 {
     m_nMsPerTick = 1000;
