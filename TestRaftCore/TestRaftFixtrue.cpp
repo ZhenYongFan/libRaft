@@ -4706,6 +4706,7 @@ void CTestRaftFixtrue::TestAddNode(void)
     vector<uint32_t> nodes, wnodes;
     r->GetNodes(nodes);
 
+    std::sort(std::begin(nodes), std::end(nodes));
     wnodes.push_back(1);
     wnodes.push_back(2);
     CPPUNIT_ASSERT(isDeepEqualNodes(nodes, wnodes));

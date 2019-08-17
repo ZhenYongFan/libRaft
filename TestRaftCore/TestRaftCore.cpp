@@ -3,6 +3,7 @@
 //
 
 #include "stdafx.h"
+#ifdef _WIN64
 #include "TestRaftCore.h"
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/ui/mfc/TestRunner.h> 
@@ -90,4 +91,20 @@ BOOL CTestRaftCoreApp::InitInstance()
 	//  而不是启动应用程序的消息泵。
 	return FALSE;
 }
+#else
+#include <cppunit/extensions/HelperMacros.h>
+#include <cppunit/ui/text/TestRunner.h>
+int main(int argc, char* argv[], char* envp[])
+{
+    int nRetCode = 0;
 
+    CppUnit::TextUi::TestRunner runner;
+    CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry();
+    runner.addTest(registry.makeTest());
+    if (2 != argc)
+        runner.run();
+    else
+        runner.run(argv[1]);
+    return nRetCode;
+}
+#endif

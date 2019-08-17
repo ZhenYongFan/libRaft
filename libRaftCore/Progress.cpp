@@ -42,7 +42,11 @@ void CProgress::BecomeProbe(void)
     {
         uint64_t pendingSnapshot = pendingSnapshot_;
         ResetState(ProgressStateProbe);
+#ifdef _WIN64
         m_u64NextLogIndex = max(m_u64MatchLogIndex + 1, pendingSnapshot + 1);
+#else
+        m_u64NextLogIndex = std::max(m_u64MatchLogIndex + 1, pendingSnapshot + 1);
+#endif
     }
     else
     {
@@ -111,8 +115,11 @@ bool CProgress::maybeDecrTo(uint64_t rejected, uint64_t last)
     {
         return false;
     }
-
+#ifdef _WIN64
     m_u64NextLogIndex = min(rejected, last + 1);
+#else
+    m_u64NextLogIndex = std::min(rejected, last + 1);
+#endif
     if (m_u64NextLogIndex < 1)
         m_u64NextLogIndex = 1;
     Resume();

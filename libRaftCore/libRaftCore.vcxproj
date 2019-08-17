@@ -135,6 +135,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="libRaftCore.def" />
+    <None Include="Makefile.am" />
     <None Include="res\libRaftCore.rc2" />
   </ItemGroup>
   <ItemGroup>

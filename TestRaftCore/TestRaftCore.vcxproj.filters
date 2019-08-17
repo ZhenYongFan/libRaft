@@ -114,6 +114,7 @@
     <None Include="res\TestRaftCore.rc2">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="Makefile.am" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\TestRaftCore.ico">
