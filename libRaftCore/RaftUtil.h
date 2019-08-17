@@ -6,9 +6,10 @@
 class CRaftMemLog;
 class CRaftStorage;
 class CLogger;
+class CRaftSerializer;
 
 BEGIN_C_DECLS
-LIBRAFTCORE_API void limitSize(uint64_t maxSize, EntryVec &entries);
+LIBRAFTCORE_API void limitSize(uint64_t maxSize, EntryVec &entries,CRaftSerializer &serializer);
 
 LIBRAFTCORE_API bool isDeepEqualNodes(const vector<uint32_t>& ns1, const vector<uint32_t>& ns2);
 LIBRAFTCORE_API bool isDeepEqualSnapshot(const CSnapshot *s1, const CSnapshot *s2);

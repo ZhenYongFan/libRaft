@@ -58,12 +58,12 @@
       <PreprocessorDefinitions>_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalOptions> /utf-8 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalIncludeDirectories>../include;../libRaftCore</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../include;../libRaftCore;../libRaftExt</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>cppunitd.lib;testrunnerud.lib;libRaftCore.lib;libprotobufd.lib</AdditionalDependencies>
+      <AdditionalDependencies>cppunitd.lib;testrunnerud.lib;libRaftExt.lib;</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -106,47 +106,25 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="NullLogger.h" />
-    <ClInclude Include="raft.pb.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="TestFlowControllerFixture.h" />
-    <ClInclude Include="TestMemStorageFixture.h" />
-    <ClInclude Include="TestProgressFixture.h" />
     <ClInclude Include="TestRaft.h" />
     <ClInclude Include="TestRaftDlg.h" />
-    <ClInclude Include="TestEventBaseFixtrue.h" />
-    <ClInclude Include="TestRaftFixtrue.h" />
-    <ClInclude Include="TestRaftFrame.h" />
-    <ClInclude Include="TestRaftLogFixture.h" />
-    <ClInclude Include="TestRaftPaperFixture.h" />
-    <ClInclude Include="TestRaftUtil.h" />
     <ClInclude Include="TestSeqsFixture.h" />
-    <ClInclude Include="TestUnstableLogFixture.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="NullLogger.cpp" />
-    <ClCompile Include="raft.pb.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="TestFlowControllerFixture.cpp" />
-    <ClCompile Include="TestMemStorageFixture.cpp" />
-    <ClCompile Include="TestProgressFixture.cpp" />
-    <ClCompile Include="TestRaft.cpp" />
-    <ClCompile Include="TestRaftDlg.cpp" />
-    <ClCompile Include="TestEventBaseFixtrue.cpp" />
-    <ClCompile Include="TestRaftFixtrue.cpp">
+    <ClCompile Include="TestRaft.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="TestRaftFrame.cpp" />
-    <ClCompile Include="TestRaftLogFixture.cpp" />
-    <ClCompile Include="TestRaftPaperFixture.cpp" />
-    <ClCompile Include="TestRaftUtil.cpp" />
-    <ClCompile Include="TestSeqsFixture.cpp" />
-    <ClCompile Include="TestUnstableLogFixture.cpp" />
+    <ClCompile Include="TestRaftDlg.cpp" />
+    <ClCompile Include="TestSeqsFixture.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="TestRaft.rc" />

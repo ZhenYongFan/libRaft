@@ -60,6 +60,9 @@
     <ClCompile Include="UnstableLog.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="RaftSerializer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="libRaftCore.def">
@@ -125,6 +128,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="UnstableLog.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="RaftSerializer.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

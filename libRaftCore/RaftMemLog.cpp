@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include "RaftMemLog.h"
 #include "RaftUtil.h"
+#include "RaftSerializer.h"
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -380,8 +381,16 @@ int CRaftMemLog::GetSliceEntries(uint64_t u64Low, uint64_t u64High, uint64_t u64
         else
             entries = unstable;
     }
-
-    limitSize(u64MaxSize, entries);
+    CRaftSerializer *pRaftSerializer = m_pStorage->GetSerializer();
+    if (pRaftSerializer != NULL)
+    {
+        limitSize(u64MaxSize, entries, *pRaftSerializer);
+    }
+    else
+    {
+        CRaftSerializer serializer;
+        limitSize(u64MaxSize, entries, serializer);
+    }
     return OK;
 }
 

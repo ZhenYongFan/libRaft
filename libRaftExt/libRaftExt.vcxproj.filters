@@ -1,0 +1,160 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="network">
+      <UniqueIdentifier>{9c08a8c7-4017-4bc2-ba9e-a131388faed1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="service">
+      <UniqueIdentifier>{ea610737-31b7-4d8f-85e6-a5c6f1524f52}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="libRaftExt.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Log4CxxLogger.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="services\KvRocksdbService.cpp">
+      <Filter>service</Filter>
+    </ClCompile>
+    <ClCompile Include="RocksDbStorage.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="network\EventBase.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\EventSession.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\IoEventBase.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\ListenEventBase.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\RaftAdminClient.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\RaftClientPool.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\RaftClientSession.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\RaftIoBase.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\RaftServer.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\RaftSession.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\rpc.pb.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="network\SequenceID.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="libRaftExt.def">
+      <Filter>源文件</Filter>
+    </None>
+    <None Include="res\libRaftExt.rc2">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="network\rpc.proto">
+      <Filter>network</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="stdafx.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Log4CxxLogger.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="services\KvRocksdbService.h">
+      <Filter>service</Filter>
+    </ClInclude>
+    <ClInclude Include="services\KvService.h">
+      <Filter>service</Filter>
+    </ClInclude>
+    <ClInclude Include="RocksDbStorage.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="network\EventBase.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\EventSession.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\IoEventBase.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\ListenEventBase.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\RaftAdminClient.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\RaftClientPool.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\RaftClientSession.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\RaftIoBase.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\RaftServer.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\RaftSession.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\rpc.pb.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="network\SequenceID.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="libRaftExt.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="libRaftExt.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

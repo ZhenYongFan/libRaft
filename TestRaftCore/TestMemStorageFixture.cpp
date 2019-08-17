@@ -7,7 +7,10 @@
 #include "RaftMemStorage.h"
 #include "NullLogger.h"
 #include "RaftUtil.h"
+#include "RaftSerializer.h"
 extern CNullLogger kDefaultLogger;
+
+CRaftSerializer serializer;
 
 CPPUNIT_TEST_SUITE_REGISTRATION(CTestMemStorageFixture);
 
@@ -180,7 +183,7 @@ void CTestMemStorageFixture::TestStorageEntries(void)
         {
             CRaftEntry entry;
 
-            int size = entries[1].ByteSize() + entries[2].ByteSize();
+            size_t size = serializer.ByteSize(entries[1]) + serializer.ByteSize(entries[2]);
             tmp t(4, 7, size, OK);
 
             entry.set_index(4);
@@ -196,8 +199,7 @@ void CTestMemStorageFixture::TestStorageEntries(void)
         // limit to 2
         {
             CRaftEntry entry;
-
-            int size = entries[1].ByteSize() + entries[2].ByteSize() + entries[3].ByteSize() / 2;
+            size_t size = serializer.ByteSize(entries[1]) + serializer.ByteSize(entries[2]) + serializer.ByteSize(entries[3])/2;
             tmp t(4, 7, size, OK);
 
             entry.set_index(4);
@@ -212,8 +214,7 @@ void CTestMemStorageFixture::TestStorageEntries(void)
         }
         {
             CRaftEntry entry;
-
-            int size = entries[1].ByteSize() + entries[2].ByteSize() + entries[3].ByteSize() - 1;
+            size_t size = serializer.ByteSize(entries[1]) + serializer.ByteSize(entries[2]) + serializer.ByteSize(entries[3]) -1;
             tmp t(4, 7, size, OK);
 
             entry.set_index(4);
@@ -229,8 +230,7 @@ void CTestMemStorageFixture::TestStorageEntries(void)
         // all
         {
             CRaftEntry entry;
-
-            int size = entries[1].ByteSize() + entries[2].ByteSize() + entries[3].ByteSize();
+            size_t size = serializer.ByteSize(entries[1]) + serializer.ByteSize(entries[2]) + serializer.ByteSize(entries[3]);
             tmp t(4, 7, size, OK);
 
             entry.set_index(4);

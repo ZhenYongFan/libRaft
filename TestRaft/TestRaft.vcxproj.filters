@@ -36,42 +36,6 @@
     <ClInclude Include="TestSeqsFixture.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="TestUnstableLogFixture.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="raft.pb.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="NullLogger.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="TestEventBaseFixtrue.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="TestMemStorageFixture.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="TestProgressFixture.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="TestRaftLogFixture.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="TestFlowControllerFixture.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="TestRaftFrame.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="TestRaftPaperFixture.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="TestRaftUtil.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="TestRaftFixtrue.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TestRaft.cpp">
@@ -84,42 +48,6 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="TestSeqsFixture.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="TestUnstableLogFixture.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="raft.pb.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="NullLogger.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="TestEventBaseFixtrue.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="TestMemStorageFixture.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="TestProgressFixture.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="TestRaftLogFixture.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="TestFlowControllerFixture.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="TestRaftFrame.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="TestRaftPaperFixture.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="TestRaftUtil.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="TestRaftFixtrue.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

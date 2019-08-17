@@ -1,13 +1,15 @@
 #include "stdafx.h"
 #include "RaftMemStorage.h"
 #include "RaftUtil.h"
+#include "RaftSerializer.h"
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
-CRaftMemStorage::CRaftMemStorage(CLogger *pLogger)
-    : m_pSnapShot(new CSnapshot())
-    , m_pLogger(pLogger)
+CRaftMemStorage::CRaftMemStorage(CLogger *pLogger,CRaftSerializer *pRaftSerializer)
+    : CRaftStorage(pRaftSerializer),
+      m_pSnapShot(new CSnapshot()),
+      m_pLogger(pLogger)
 {
     // When starting from scratch populate the list with a dummy entry at term zero.
     entries_.push_back(CRaftEntry());
@@ -111,7 +113,15 @@ int CRaftMemStorage::Entries(uint64_t u64Low, uint64_t u64High, uint64_t u64MaxS
     {
         entries.push_back(entries_[i]);
     }
-    limitSize(u64MaxSize, entries);
+    if (m_pRaftSerializer != NULL)
+    {
+        limitSize(u64MaxSize, entries, *m_pRaftSerializer);
+    }
+    else
+    {
+        CRaftSerializer serializer;
+        limitSize(u64MaxSize, entries, serializer);
+    }
     return OK;
 }
 

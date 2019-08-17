@@ -65,10 +65,6 @@ public:
         m_strData = strData;
     }
 
-    size_t ByteSize(void) const
-    {
-        return sizeof(m_u64Term) + sizeof(m_u64Term) + sizeof(m_eType) + sizeof(int) + m_strData.size();
-    }
 public:
     uint64_t m_u64Term;         ///< 任期号
     uint64_t m_u64Index;        ///< 日志索引号

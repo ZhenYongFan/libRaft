@@ -10,6 +10,8 @@
 #include "NullLogger.h"
 #include "RaftUtil.h"
 extern CNullLogger kDefaultLogger;
+#include "RaftSerializer.h"
+extern CRaftSerializer serializer;
 
 CPPUNIT_TEST_SUITE_REGISTRATION(CTestRaftLogFixture);
 
@@ -1524,7 +1526,7 @@ void CTestRaftLogFixture::TestSlice(void)
         tests.push_back(t);
     }
     {
-        tmp t(half - 1, half + 1, halfe.ByteSize() + 1, false);
+        tmp t(half - 1, half + 1, serializer.ByteSize(halfe) + 1, false);
         CRaftEntry entry;
 
         entry.set_index(half - 1);
@@ -1534,7 +1536,7 @@ void CTestRaftLogFixture::TestSlice(void)
         tests.push_back(t);
     }
     {
-        tmp t(half - 2, half + 1, halfe.ByteSize() + 1, false);
+        tmp t(half - 2, half + 1, serializer.ByteSize(halfe) + 1, false);
         CRaftEntry entry;
 
         entry.set_index(half - 2);
@@ -1544,7 +1546,7 @@ void CTestRaftLogFixture::TestSlice(void)
         tests.push_back(t);
     }
     {
-        tmp t(half - 1, half + 1, halfe.ByteSize() * 2, false);
+        tmp t(half - 1, half + 1, serializer.ByteSize(halfe) * 2, false);
         CRaftEntry entry;
 
         entry.set_index(half - 1);
@@ -1557,7 +1559,7 @@ void CTestRaftLogFixture::TestSlice(void)
         tests.push_back(t);
     }
     {
-        tmp t(half - 1, half + 2, halfe.ByteSize() * 3, false);
+        tmp t(half - 1, half + 2, serializer.ByteSize(halfe) * 3, false);
         CRaftEntry entry;
 
         entry.set_index(half - 1);
@@ -1575,7 +1577,7 @@ void CTestRaftLogFixture::TestSlice(void)
         tests.push_back(t);
     }
     {
-        tmp t(half, half + 2, halfe.ByteSize(), false);
+        tmp t(half, half + 2, serializer.ByteSize(halfe), false);
         CRaftEntry entry;
 
         entry.set_index(half);
@@ -1584,7 +1586,7 @@ void CTestRaftLogFixture::TestSlice(void)
         tests.push_back(t);
     }
     {
-        tmp t(half, half + 2, halfe.ByteSize() * 2, false);
+        tmp t(half, half + 2, serializer.ByteSize(halfe) * 2, false);
         CRaftEntry entry;
 
         entry.set_index(half);

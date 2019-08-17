@@ -9,7 +9,7 @@ class LIBRAFTCORE_API CRaftMemStorage :public CRaftStorage
 public:
     ///\brief 构造函数
     ///\param pLogger 用于输出日志的对象
-    CRaftMemStorage(CLogger *pLogger);
+    CRaftMemStorage(CLogger *pLogger, CRaftSerializer *pRaftSerializer = NULL);
 
     ///\brief 析构函数
     virtual ~CRaftMemStorage(void);

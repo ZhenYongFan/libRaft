@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "RaftUtil.h"
 #include "RaftMemLog.h"
+#include "RaftSerializer.h"
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -75,16 +76,16 @@ bool isDeepEqualNodes(const vector<uint32_t>& ns1, const vector<uint32_t>& ns2) 
   return true;
 }
 
-void limitSize(uint64_t maxSize, EntryVec &entries) {
+void limitSize(uint64_t maxSize, EntryVec &entries, CRaftSerializer &serializer) {
   if (entries.empty()) {
     return;
   }
 
   int limit;
   int num = static_cast<int>(entries.size());
-  uint64_t size = entries[0].ByteSize();
+  uint64_t size = serializer.ByteSize(entries[0]);
   for (limit = 1; limit < num; ++limit) {
-    size += entries[limit].ByteSize();
+    size += serializer.ByteSize(entries[limit]);
     if (size > maxSize) {
       break;
     }
