@@ -96,14 +96,14 @@ void CTestRaftFixtrue::TestProgressBecomeProbe(void)
     vector<tmp> tests;
     {
         CProgress p(5, 256, &kDefaultLogger);
-        p.state_ = ProgressStateReplicate;
+        p.m_statePro = ProgressStateReplicate;
         p.m_u64MatchLogIndex = match;
         tests.push_back(tmp(p, 2));
     }
     // snapshot finish
     {
         CProgress p(5, 256, &kDefaultLogger);
-        p.state_ = ProgressStateSnapshot;
+        p.m_statePro = ProgressStateSnapshot;
         p.m_u64MatchLogIndex = match;
         p.pendingSnapshot_ = 10;
         tests.push_back(tmp(p, 11));
@@ -111,7 +111,7 @@ void CTestRaftFixtrue::TestProgressBecomeProbe(void)
     // snapshot failure
     {
         CProgress p(5, 256, &kDefaultLogger);
-        p.state_ = ProgressStateSnapshot;
+        p.m_statePro = ProgressStateSnapshot;
         p.m_u64MatchLogIndex = match;
         p.pendingSnapshot_ = 0;
         tests.push_back(tmp(p, 2));
@@ -122,7 +122,7 @@ void CTestRaftFixtrue::TestProgressBecomeProbe(void)
     {
         tmp &t = tests[i];
         t.p.BecomeProbe();
-        CPPUNIT_ASSERT_EQUAL(t.p.state_, ProgressStateProbe);
+        CPPUNIT_ASSERT_EQUAL(t.p.m_statePro, ProgressStateProbe);
         CPPUNIT_ASSERT_EQUAL(t.p.m_u64MatchLogIndex, match);
         CPPUNIT_ASSERT_EQUAL(t.p.m_u64NextLogIndex, t.wnext);
     }
@@ -131,11 +131,11 @@ void CTestRaftFixtrue::TestProgressBecomeProbe(void)
 void CTestRaftFixtrue::TestProgressBecomeReplicate(void)
 {
     CProgress p(5, 256, &kDefaultLogger);
-    p.state_ = ProgressStateProbe;
+    p.m_statePro = ProgressStateProbe;
     p.m_u64MatchLogIndex = 1;
 
     p.BecomeReplicate();
-    CPPUNIT_ASSERT_EQUAL(p.state_, ProgressStateReplicate);
+    CPPUNIT_ASSERT_EQUAL(p.m_statePro, ProgressStateReplicate);
     CPPUNIT_ASSERT(p.m_u64MatchLogIndex == 1);
     CPPUNIT_ASSERT_EQUAL(p.m_u64NextLogIndex, p.m_u64MatchLogIndex + 1);
 }
@@ -143,11 +143,11 @@ void CTestRaftFixtrue::TestProgressBecomeReplicate(void)
 void CTestRaftFixtrue::TestProgressBecomeSnapshot(void)
 {
     CProgress p(5, 256, &kDefaultLogger);
-    p.state_ = ProgressStateProbe;
+    p.m_statePro = ProgressStateProbe;
     p.m_u64MatchLogIndex = 1;
 
     p.BecomeSnapshot(10);
-    CPPUNIT_ASSERT_EQUAL(p.state_, ProgressStateSnapshot);
+    CPPUNIT_ASSERT_EQUAL(p.m_statePro, ProgressStateSnapshot);
     CPPUNIT_ASSERT(p.m_u64MatchLogIndex == 1);
     CPPUNIT_ASSERT(p.pendingSnapshot_ == 10);
 }
@@ -240,7 +240,7 @@ void CTestRaftFixtrue::TestProgressMaybeDecr(void)
         tmp &t = tests[i];
         CProgress p(t.n, 256, &kDefaultLogger);
         p.m_u64MatchLogIndex = t.m;
-        p.state_ = t.state;
+        p.m_statePro = t.state;
 
         bool g = p.maybeDecrTo(t.rejected, t.last);
         CPPUNIT_ASSERT_EQUAL(g, t.w);
@@ -276,7 +276,7 @@ void CTestRaftFixtrue::TestProgressIsPaused(void)
         tmp &t = tests[i];
         CProgress p(0, 256, &kDefaultLogger);
         p.m_bPaused = t.paused;
-        p.state_ = t.state;
+        p.m_statePro = t.state;
 
         bool g = p.IsPaused();
         CPPUNIT_ASSERT_EQUAL(g, t.w);
@@ -305,7 +305,7 @@ void CTestRaftFixtrue::TestProgressResumeByHeartbeatResp(void)
     peers.push_back(1);
     peers.push_back(2);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->BecomeCandidate();
     r->BecomeLeader();
@@ -341,7 +341,7 @@ void CTestRaftFixtrue::TestProgressPaused(void)
     peers.push_back(1);
     peers.push_back(2);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
     CRaft *r = pFrame->m_pRaftNode;
 
     r->BecomeCandidate();
@@ -681,7 +681,7 @@ void testVoteFromAnyState(CMessage::EMessageType vt)
     int i;
     for (i = 0; i < (int)numStates; ++i)
     {
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
         CRaft *r = pFrame->m_pRaftNode;
 
         r->SetTerm(1);
@@ -1115,7 +1115,7 @@ void CTestRaftFixtrue::TestDuelingCandidates(void)
         ids.push_back(1);
         ids.push_back(2);
         ids.push_back(3);
-        CRaftFrame *pFrame = newTestRaft(1, ids, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, ids, 10, 1);
         peers.push_back(new raftStateMachine(pFrame));
     }
     {
@@ -1123,7 +1123,7 @@ void CTestRaftFixtrue::TestDuelingCandidates(void)
         ids.push_back(1);
         ids.push_back(2);
         ids.push_back(3);
-        CRaftFrame *pFrame = newTestRaft(2, ids, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(2, ids, 10, 1);
         peers.push_back(new raftStateMachine(pFrame));
     }
     {
@@ -1131,7 +1131,7 @@ void CTestRaftFixtrue::TestDuelingCandidates(void)
         ids.push_back(1);
         ids.push_back(2);
         ids.push_back(3);
-        CRaftFrame *pFrame = newTestRaft(3, ids, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(3, ids, 10, 1);
         peers.push_back(new raftStateMachine(pFrame));
     }
     network *net = newNetwork(peers);
@@ -1248,7 +1248,7 @@ void CTestRaftFixtrue::TestDuelingPreCandidates(void)
         ids.push_back(1);
         ids.push_back(2);
         ids.push_back(3);
-        CRaftFrame *pFrame = newTestRaft(1, ids, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, ids, 10, 1);
         pFrame->m_pRaftNode->m_pConfig->m_bPreVote = true;
         peers.push_back(new raftStateMachine(pFrame));
     }
@@ -1257,7 +1257,7 @@ void CTestRaftFixtrue::TestDuelingPreCandidates(void)
         ids.push_back(1);
         ids.push_back(2);
         ids.push_back(3);
-        CRaftFrame *pFrame = newTestRaft(2, ids, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(2, ids, 10, 1);
         pFrame->m_pRaftNode->m_pConfig->m_bPreVote = true;
         peers.push_back(new raftStateMachine(pFrame));
     }
@@ -1266,7 +1266,7 @@ void CTestRaftFixtrue::TestDuelingPreCandidates(void)
         ids.push_back(1);
         ids.push_back(2);
         ids.push_back(3);
-        CRaftFrame *pFrame = newTestRaft(3, ids, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(3, ids, 10, 1);
         pFrame->m_pRaftNode->m_pConfig->m_bPreVote = true;
         peers.push_back(new raftStateMachine(pFrame));
     }
@@ -2236,7 +2236,7 @@ void CTestRaftFixtrue::TestCommit(void)
         vector<uint32_t> peers;
         peers.push_back(1);
         
-        CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1, t.logs, t.term);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 5, 1, t.logs, t.term);
         CRaft *r = pFrame->m_pRaftNode;
 
         int j;
@@ -2281,7 +2281,7 @@ void CTestRaftFixtrue::TestPastElectionTimeout(void)
         vector<uint32_t> peers;
         peers.push_back(1);
 
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
         CRaft *r = pFrame->m_pRaftNode;
         r->m_nTicksElectionElapsed = t.elapse;
         int c = 0, j;
@@ -2494,7 +2494,7 @@ void CTestRaftFixtrue::TestHandleMsgApp(void)
         vector<uint32_t> peers;
         peers.push_back(1);
 
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1, entries);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1, entries);
         CRaft *r = pFrame->m_pRaftNode;
 
         r->OnAppendEntries(t.m);
@@ -2577,7 +2577,7 @@ void CTestRaftFixtrue::TestHandleHeartbeat(void)
         peers.push_back(1);
         peers.push_back(2);
 
-        CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1, entries);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 5, 1, entries);
         CRaft *r = pFrame->m_pRaftNode;
 
         r->BecomeFollower(2, 2);
@@ -2623,7 +2623,7 @@ void CTestRaftFixtrue::TestHandleHeartbeatResp(void)
     vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
-    CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1, entries);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 5, 1, entries);
     CRaft *r = pFrame->m_pRaftNode;
 
     r->BecomeCandidate();
@@ -2692,7 +2692,7 @@ void CTestRaftFixtrue::TestRaftFreesReadOnlyMem(void)
     peers.push_back(1);
     peers.push_back(2);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->BecomeCandidate();
     r->BecomeLeader();
@@ -2748,7 +2748,7 @@ void CTestRaftFixtrue::TestMsgAppRespWaitReset(void)
     peers.push_back(2);
     peers.push_back(3);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
     CRaft *r = pFrame->m_pRaftNode;
 
     r->BecomeCandidate();
@@ -2860,7 +2860,7 @@ void testRecvMsgVote(CMessage::EMessageType type)
         tmp &t = tests[i];
         vector<uint32_t> peers;
         peers.push_back(1);
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
         CRaft *r = pFrame->m_pRaftNode;
 
         r->SetState(t.state);
@@ -2957,7 +2957,7 @@ void CTestRaftFixtrue::TestAllServerStepdown(void)
         peers.push_back(1);
         peers.push_back(2);
         peers.push_back(3);
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
         CRaft *r = pFrame->m_pRaftNode;
 
         switch (t.state)
@@ -3013,7 +3013,7 @@ void CTestRaftFixtrue::TestLeaderStepdownWhenQuorumActive(void)
     peers.push_back(1);
     peers.push_back(2);
     peers.push_back(3);
-    CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->m_pConfig->m_bCheckQuorum = true;
 
@@ -3043,7 +3043,7 @@ void CTestRaftFixtrue::TestLeaderStepdownWhenQuorumLost(void)
     peers.push_back(2);
     peers.push_back(3);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->m_pConfig->m_bCheckQuorum = true;
 
@@ -3063,7 +3063,7 @@ void CTestRaftFixtrue::TestLeaderStepdownWhenQuorumLost(void)
 
 void CTestRaftFixtrue::TestLeaderSupersedingWithCheckQuorum(void)
 {
-    CRaftFrame *aFrame, *bFrame, *cFrame;
+    CTestRaftFrame *aFrame, *bFrame, *cFrame;
     CRaft *a, *b, *c;
     vector<stateMachine*> peers;
     {
@@ -3153,7 +3153,7 @@ void CTestRaftFixtrue::TestLeaderSupersedingWithCheckQuorum(void)
 
 void CTestRaftFixtrue::TestLeaderElectionWithCheckQuorum(void)
 {
-    CRaftFrame *aFrame, *bFrame, *cFrame;
+    CTestRaftFrame *aFrame, *bFrame, *cFrame;
     CRaft *a, *b, *c;
     vector<stateMachine*> peers;
 
@@ -3242,7 +3242,7 @@ void CTestRaftFixtrue::TestLeaderElectionWithCheckQuorum(void)
 // leader is expected to Step down and adopt the candidate's term
 void CTestRaftFixtrue::TestFreeStuckCandidateWithCheckQuorum(void)
 {
-    CRaftFrame *aFrame, *bFrame, *cFrame;
+    CTestRaftFrame *aFrame, *bFrame, *cFrame;
     CRaft *a, *b, *c;
     vector<stateMachine*> peers;
 
@@ -3342,7 +3342,7 @@ void CTestRaftFixtrue::TestFreeStuckCandidateWithCheckQuorum(void)
 
 void CTestRaftFixtrue::TestNonPromotableVoterWithCheckQuorum(void)
 {
-    CRaftFrame *aFrame, *bFrame;
+    CTestRaftFrame *aFrame, *bFrame;
     CRaft *a, *b;
     vector<stateMachine*> peers;
 
@@ -3394,7 +3394,7 @@ void CTestRaftFixtrue::TestNonPromotableVoterWithCheckQuorum(void)
 
 void CTestRaftFixtrue::TestReadOnlyOptionSafe(void)
 {
-    CRaftFrame *aFrame, *bFrame, *cFrame;
+    CTestRaftFrame *aFrame, *bFrame, *cFrame;
     CRaft *a, *b, *c;
     vector<stateMachine*> peers;
 
@@ -3449,12 +3449,12 @@ void CTestRaftFixtrue::TestReadOnlyOptionSafe(void)
     CPPUNIT_ASSERT_EQUAL(a->GetState(), eStateLeader);
     struct tmp
     {
-        CRaftFrame *r;
+        CTestRaftFrame *r;
         int proposals;
         uint64_t wri;
         string ctx;
 
-        tmp(CRaftFrame *r, int proposals, uint64_t wri, string ctx)
+        tmp(CTestRaftFrame *r, int proposals, uint64_t wri, string ctx)
             : r(r), proposals(proposals), wri(wri), ctx(ctx)
         {
         }
@@ -3495,7 +3495,7 @@ void CTestRaftFixtrue::TestReadOnlyOptionSafe(void)
             net->send(&msgs);
         }
 
-        CRaftFrame *rFrame = t.r;
+        CTestRaftFrame *rFrame = t.r;
         vector<CLogOperation*> opts;
         rFrame->ReadLogOpt(opts);
         CPPUNIT_ASSERT(!opts.empty());
@@ -3515,7 +3515,7 @@ void CTestRaftFixtrue::TestReadOnlyOptionLease(void)
     peers.push_back(2);
     peers.push_back(3);
 
-    CRaftFrame *aFrame, *bFrame, *cFrame;
+    CTestRaftFrame *aFrame, *bFrame, *cFrame;
     CRaft *a, *b, *c;
     {
         aFrame = newTestRaft(1, peers, 10, 1);
@@ -3561,12 +3561,12 @@ void CTestRaftFixtrue::TestReadOnlyOptionLease(void)
 
     struct tmp
     {
-        CRaftFrame *r;
+        CTestRaftFrame *r;
         int proposals;
         uint64_t wri;
         string wctx;
 
-        tmp(CRaftFrame *r, int proposals, uint64_t wri, string ctx)
+        tmp(CTestRaftFrame *r, int proposals, uint64_t wri, string ctx)
             : r(r), proposals(proposals), wri(wri), wctx(ctx)
         {
         }
@@ -3606,7 +3606,7 @@ void CTestRaftFixtrue::TestReadOnlyOptionLease(void)
             net->send(&msgs);
         }
 
-        CRaftFrame *rFrame = t.r;
+        CTestRaftFrame *rFrame = t.r;
         vector<CLogOperation*> opts;
         rFrame->ReadLogOpt(opts);
 
@@ -3626,7 +3626,7 @@ void CTestRaftFixtrue::TestReadOnlyOptionLeaseWithoutCheckQuorum(void)
     peers.push_back(2);
     peers.push_back(3);
 
-    CRaftFrame *aFrame, *bFrame, *cFrame;
+    CTestRaftFrame *aFrame, *bFrame, *cFrame;
     CRaft *a, *b, *c;
     {
         aFrame = newTestRaft(1, peers, 10, 1);
@@ -3690,7 +3690,7 @@ void CTestRaftFixtrue::TestReadOnlyForNewLeader(void)
     peers.push_back(2);
     peers.push_back(3);
 
-    CRaftFrame *aFrame, *bFrame, *cFrame;
+    CTestRaftFrame *aFrame, *bFrame, *cFrame;
     CRaft *a, *b, *c;
     {
         vector<CRaftEntry> entries;
@@ -3868,7 +3868,7 @@ void CTestRaftFixtrue::TestLeaderAppResp(void)
         peers.push_back(1);
         peers.push_back(2);
         peers.push_back(3);
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
         CRaft *r = pFrame->m_pRaftNode;
         CRaftMemStorage *s = NULL;
         CRaftMemLog* pMemLog = NULL;
@@ -3941,7 +3941,7 @@ void CTestRaftFixtrue::TestBcastBeat(void)
     ss.mutable_metadata()->mutable_conf_state()->add_nodes(2);
     ss.mutable_metadata()->mutable_conf_state()->add_nodes(3);
     vector<uint32_t> peers;
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1,ss);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1,ss);
     CRaft *r = pFrame->m_pRaftNode;
     r->SetTerm(1);
 
@@ -4021,7 +4021,7 @@ void CTestRaftFixtrue::TestRecvMsgBeat(void)
         peers.push_back(1);
         peers.push_back(2);
         peers.push_back(3);
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
         CRaft *r = pFrame->m_pRaftNode;
 
         EntryVec entries;
@@ -4111,7 +4111,7 @@ void CTestRaftFixtrue::TestLeaderIncreaseNext(void)
         peers.push_back(1);
         peers.push_back(2);
 
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
         CRaft *r = pFrame->m_pRaftNode;
         r->m_pRaftLog->Append(prevEntries);
         r->BecomeCandidate();
@@ -4138,7 +4138,7 @@ void CTestRaftFixtrue::TestSendAppendForProgressProbe(void)
     peers.push_back(1);
     peers.push_back(2);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->BecomeCandidate();
     r->BecomeLeader();
@@ -4211,7 +4211,7 @@ void CTestRaftFixtrue::TestSendAppendForProgressReplicate(void)
     vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->BecomeCandidate();
     r->BecomeLeader();
@@ -4243,7 +4243,7 @@ void CTestRaftFixtrue::TestSendAppendForProgressSnapshot(void)
     peers.push_back(1);
     peers.push_back(2);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->BecomeCandidate();
     r->BecomeLeader();
@@ -4291,7 +4291,7 @@ void CTestRaftFixtrue::TestRecvMsgUnreachable(void)
     peers.push_back(1);
     peers.push_back(2);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1, prevEntries);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1, prevEntries);
     CRaft *r = pFrame->m_pRaftNode;
     r->BecomeCandidate();
     r->BecomeLeader();
@@ -4299,7 +4299,7 @@ void CTestRaftFixtrue::TestRecvMsgUnreachable(void)
     // set node 2 to state replicate
     r->m_mapProgress[2]->m_u64MatchLogIndex = 3;
     r->m_mapProgress[2]->BecomeReplicate();
-    r->m_mapProgress[2]->optimisticUpdate(5);
+    r->m_mapProgress[2]->OptimisticUpdate(5);
 
     {
         CMessage msg;
@@ -4329,7 +4329,7 @@ void CTestRaftFixtrue::TestRestore(void)
     peers.push_back(1);
     peers.push_back(2);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
 
     CPPUNIT_ASSERT(r->Restore(ss));
@@ -4366,7 +4366,7 @@ void CTestRaftFixtrue::TestRestoreIgnoreSnapshot(void)
     peers.push_back(1);
     peers.push_back(2);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->m_pRaftLog->Append(prevEntries);
     uint64_t commit = 1;
@@ -4403,7 +4403,7 @@ void CTestRaftFixtrue::TestProvideSnap(void)
     vector<uint32_t> peers;
     peers.push_back(1);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
 
     r->Restore(ss);
@@ -4444,7 +4444,7 @@ void CTestRaftFixtrue::TestIgnoreProvidingSnap(void)
     vector<uint32_t> peers;
     peers.push_back(1);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
 
     r->Restore(ss);
@@ -4573,7 +4573,7 @@ void CTestRaftFixtrue::TestStepConfig(void)
     peers.push_back(1);
     peers.push_back(2);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
 
     r->BecomeCandidate();
@@ -4603,7 +4603,7 @@ void CTestRaftFixtrue::TestStepIgnoreConfig(void)
     peers.push_back(1);
     peers.push_back(2);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
 
     r->BecomeCandidate();
@@ -4672,7 +4672,7 @@ void CTestRaftFixtrue::TestRecoverPendingConfig(void)
         peers.push_back(1);
         peers.push_back(2);
 
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
         CRaft *r = pFrame->m_pRaftNode;
 
         EntryVec entries;
@@ -4698,7 +4698,7 @@ void CTestRaftFixtrue::TestAddNode(void)
     vector<uint32_t> peers;
     peers.push_back(1);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
 
     r->AddNode(2);
@@ -4722,7 +4722,7 @@ void CTestRaftFixtrue::TestRemoveNode(void)
     peers.push_back(1);
     peers.push_back(2);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
 
     r->RemoveNode(2);
@@ -4781,7 +4781,7 @@ void CTestRaftFixtrue::TestPromotable(void)
     {
         tmp &t = tests[i];
 
-        CRaftFrame *pFrame = newTestRaft(1, t.peers, 5, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, t.peers, 5, 1);
         CRaft *r = pFrame->m_pRaftNode;
 
         CPPUNIT_ASSERT_EQUAL(r->IsPromotable(), t.wp);
@@ -4824,7 +4824,7 @@ void CTestRaftFixtrue::TestRaftNodes(void)
     {
         tmp &t = tests[i];
 
-        CRaftFrame *pFrame = newTestRaft(1, t.ids, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, t.ids, 10, 1);
         CRaft *r = pFrame->m_pRaftNode;
         vector<uint32_t> nodes;
         r->GetNodes(nodes);
@@ -4840,7 +4840,7 @@ void testCampaignWhileLeader(bool prevote)
     vector<uint32_t> peers;
     peers.push_back(1);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->m_pConfig->m_bPreVote = prevote;
     CPPUNIT_ASSERT_EQUAL(r->GetState(), eStateFollower);
@@ -4889,7 +4889,7 @@ void CTestRaftFixtrue::TestCommitAfterRemoveNode(void)
     peers.push_back(1);
     peers.push_back(2);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
     CRaft *r = pFrame->m_pRaftNode;
 
     r->BecomeCandidate();
@@ -5697,7 +5697,7 @@ void CTestRaftFixtrue::TestTransferNonMember(void)
     peers.push_back(3);
     peers.push_back(4);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
     CRaft *r = pFrame->m_pRaftNode;
 
     {

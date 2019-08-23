@@ -53,7 +53,7 @@ struct connem
 
 struct raftStateMachine : public stateMachine
 {
-    raftStateMachine(CRaftFrame *pFrame);
+    raftStateMachine(CTestRaftFrame *pFrame);
     raftStateMachine(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, EntryVec &ents, ConfigFun funCfg);
     raftStateMachine(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, CHardState &hs, ConfigFun funCfg);
 
@@ -72,7 +72,7 @@ struct raftStateMachine : public stateMachine
     }
 
     CRaft *raft;
-    CRaftFrame *m_pFrame;
+    CTestRaftFrame *m_pFrame;
 };
 
 struct blackHole : public stateMachine

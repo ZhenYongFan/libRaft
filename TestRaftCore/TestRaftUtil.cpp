@@ -79,7 +79,7 @@ bool operator < (const connem& c1, const connem& c2)
     return false;
 }
 
-raftStateMachine::raftStateMachine(CRaftFrame *pFrame)
+raftStateMachine::raftStateMachine(CTestRaftFrame *pFrame)
 {
     m_pFrame = pFrame;
     raft = m_pFrame->m_pRaftNode;

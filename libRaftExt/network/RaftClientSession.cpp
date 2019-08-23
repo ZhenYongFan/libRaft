@@ -1,16 +1,16 @@
 #include "stdafx.h"
 #include "RaftClientSession.h"
 #include "RaftClientPool.h"
-#include "rpc.pb.h"
+#include "protobuffer/rpc.pb.h"
 using namespace raftserverpb;
 
-CRaftClientSession::CRaftClientSession(CIoEventBase *pIoBase, struct bufferevent *pBufferEvent)
-    :CRaftSession(pIoBase,pBufferEvent)
+CRaftClientSession::CRaftClientSession(CIoEventBase *pIoBase, struct bufferevent *pBufferEvent, uint32_t nSessionID)
+    :CRaftSession(pIoBase,pBufferEvent,nSessionID)
 {
 
 }
-CRaftClientSession::CRaftClientSession(CIoEventBase *pIoBase, struct bufferevent *pBufferEvent, const std::string &strHost, int nPort)
-    : CRaftSession(pIoBase,pBufferEvent,strHost,nPort)
+CRaftClientSession::CRaftClientSession(CIoEventBase *pIoBase, struct bufferevent *pBufferEvent, const std::string &strHost, int nPort, uint32_t nSessionID)
+    : CRaftSession(pIoBase,pBufferEvent,strHost,nPort,nSessionID)
 {
 
 }

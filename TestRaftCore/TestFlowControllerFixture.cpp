@@ -33,7 +33,7 @@ void CTestFlowControllerFixture::TestBase(void)
     peers.push_back(1);
     peers.push_back(2);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
     CRaft *r = pFrame->m_pRaftNode;
     pFrame->Uninit();
     delete pFrame;
@@ -48,7 +48,7 @@ void CTestFlowControllerFixture::TestMsgAppFlowControlFull(void)
     peers.push_back(1);
     peers.push_back(2);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->BecomeCandidate();
     r->BecomeLeader();
@@ -114,7 +114,7 @@ void CTestFlowControllerFixture::TestMsgAppFlowControlMoveForward(void)
     vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
-    CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->BecomeCandidate();
     r->BecomeLeader();
@@ -205,7 +205,7 @@ void CTestFlowControllerFixture::TestMsgAppFlowControlRecvHeartbeat(void)
     vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
-    CRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 5, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->BecomeCandidate();
     r->BecomeLeader();

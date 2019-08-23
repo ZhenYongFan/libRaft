@@ -1,7 +1,4 @@
 #include "stdafx.h"
-// #include "raft.pb.h"
-// using namespace raftpb;
-
 #include "RocksDbStorage.h"
 #include "RaftSerializer.h"
 #include <rocksdb/db.h>
@@ -114,7 +111,7 @@ int CRocksDbStorage::FirstIndex(uint64_t &u64Index)
                 strData = pIter->value();
                 std::string strValue(strData.data(), strData.size());
                 CRaftEntry entry;
-                m_pRaftSerializer->ParseFromString(entry,strValue);
+                m_pRaftSerializer->ParseEntry(entry,strValue);
                 u64Index = entry.index();
                 m_u64FirstIndex = u64Index;
                 nGet = 0;
@@ -146,7 +143,7 @@ int CRocksDbStorage::LastIndex(uint64_t &u64Index)
                 strData = pIter->value();
                 std::string strValue(strData.data(), strData.size());
                 CRaftEntry entry;
-                m_pRaftSerializer->ParseFromString(entry, strValue);
+                m_pRaftSerializer->ParseEntry(entry, strValue);
                 u64Index = entry.index();
                 m_u64LastIndex = u64Index;
                 nGet = 0;
@@ -242,7 +239,7 @@ int CRocksDbStorage::Term(uint64_t u64Index, uint64_t &u64Term)
     if (statusDB.code() == Status::kOk)
     {
         CRaftEntry entry;
-        m_pRaftSerializer->ParseFromString(entry, strValue);
+        m_pRaftSerializer->ParseEntry(entry, strValue);
         u64Term = entry.term();
     }
     return int(statusDB.code());
@@ -259,7 +256,7 @@ int CRocksDbStorage::Append(const EntryVec& entries)
         u64LastIndex = entry.index();
         snprintf(cTemp, 64, "%llu",u64LastIndex );
         strKey = cTemp;
-        m_pRaftSerializer->SerializeAsString(entry, strValue);
+        m_pRaftSerializer->SerializeEntry(entry, strValue);
         batchWrite.Put(strKey, strValue);
     }
     Status statusDB = m_pStocksDB->Write(WriteOptions(), &batchWrite);
@@ -283,7 +280,7 @@ int CRocksDbStorage::Entries(uint64_t u64Low, uint64_t u64High, uint64_t u64MaxS
         if (statusDB.code() == Status::kOk)
         {
             CRaftEntry entry;
-            m_pRaftSerializer->ParseFromString(entry, strValue);
+            m_pRaftSerializer->ParseEntry(entry, strValue);
             if (u64DatSize + m_pRaftSerializer->ByteSize(entry) <= u64MaxSize)
             {
                 entries.push_back(entry);

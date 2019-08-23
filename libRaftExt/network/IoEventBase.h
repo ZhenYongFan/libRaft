@@ -1,15 +1,16 @@
 #pragma once
-#include "libRaftCore.h"
+#include "libRaftExt.h"
 #include "EventBase.h"
 
 class CSequenceID;
 class CEventSession;
 
 ///\brief 负责IO操作的EventBase
-class LIBRAFTCORE_API CIoEventBase:public CEventBase
+class LIBRAFTEXT_API CIoEventBase:public CEventBase
 {
 public:
     ///\brief 构造函数
+    ///\param pSessionSeqID 流水号管理器
     CIoEventBase(CSequenceID *pSessionSeqID);
 
     ///\brief 析构函数
@@ -28,9 +29,9 @@ public:
 
 protected:
 
-    CSequenceID *m_pSessionSeqID;
+    CSequenceID *m_pSessionSeqID; ///< 流水号管理器
 
-    std::mutex m_mutexSession;
+    std::unordered_map<uint32_t,CEventSession *> m_mapSession; ///< Session集合
 
-    std::unordered_map<uint32_t,CEventSession *> m_mapSession;
+    std::mutex m_mutexSession;    ///< Session集合的多线程锁
 };

@@ -28,7 +28,7 @@ void CTestSeqsFixture::tearDown(void)
 
 }
 
-void CTestSeqsFixture::TestExample(void)
+void CTestSeqsFixture::TestSeqs(void)
 {
     CSequenceID seqIDs(1024);
     uint32_t nSeqID;

@@ -1,9 +1,9 @@
 #pragma once
-#include "libRaftCore.h"
+#include "libRaftExt.h"
 #include <thread>
 
 ///\brief 对libevent base的简单封装，启动一个线程负责event base的loop函数
-class LIBRAFTCORE_API CEventBase
+class LIBRAFTEXT_API CEventBase
 {
 public:
     ///\brief 构造函数

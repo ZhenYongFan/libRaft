@@ -3,11 +3,12 @@
 #include "RaftDef.h"
 class CRaftSerializer;
 
-///\brief 保存Raft日志的稳定部分，对应CUnstableLog
+///\brief 保存Raft日志的稳定部分，一般采用持久化存储模式，对应CUnstableLog
 class LIBRAFTCORE_API CRaftStorage
 {
 public:
     ///\brief 构造函数
+    ///\param pRaftSerializer 串行化对象
     CRaftStorage(CRaftSerializer *pRaftSerializer = NULL)
     {
         m_u64Committed = 0;
@@ -20,20 +21,32 @@ public:
     {
     }
 
+    ///\brief 取得当前的串行化对象
     CRaftSerializer *GetSerializer(void)
     {
         return m_pRaftSerializer;
     }
+    
     virtual int InitialState(CHardState &hs, CConfState &cs) = 0;
+    
     virtual int FirstIndex(uint64_t &u64Index) = 0;
+    
     virtual int LastIndex(uint64_t &u64Index) = 0;
+    
     virtual int SetCommitted(uint64_t u64Committed) = 0;
+    
     virtual int SetApplied(uint64_t u64tApplied) = 0;
+    
     virtual int Term(uint64_t u64Index, uint64_t &u64Term) = 0;
+    
     virtual int Append(const EntryVec& entries) = 0;
+    
     virtual int Entries(uint64_t u64Low, uint64_t u64High, uint64_t u64MaxSize, vector<CRaftEntry> &entries) = 0;
+    
     virtual int SetHardState(const CHardState&) = 0;
+    
     virtual int GetSnapshot(CSnapshot **snapshot) = 0;
+    
     virtual int CreateSnapshot(uint64_t i, CConfState *cs, const string& data, CSnapshot *ss) = 0;
     
 public:

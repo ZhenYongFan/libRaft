@@ -10,7 +10,7 @@
 CProgress::CProgress(uint64_t next, int maxInfilght, CLogger *pLogger)
     : m_u64MatchLogIndex(0),
     m_u64NextLogIndex(next),
-    state_(ProgressStateProbe),
+    m_statePro(ProgressStateProbe),
     m_bPaused(false),
     pendingSnapshot_(0),
     m_bRecentActive(false),
@@ -29,7 +29,7 @@ void CProgress::ResetState(ProgressState state)
 {
     m_bPaused = false;
     pendingSnapshot_ = 0;
-    state_ = state;
+    m_statePro = state;
     ins_.Reset();
 }
 
@@ -38,7 +38,7 @@ void CProgress::BecomeProbe(void)
     // If the original state is ProgressStateSnapshot, progress knows that
     // the pending snapshot has been sent to this peer successfully, then
     // probes from pendingSnapshot + 1.
-    if (state_ == ProgressStateSnapshot)
+    if (m_statePro == ProgressStateSnapshot)
     {
         uint64_t pendingSnapshot = pendingSnapshot_;
         ResetState(ProgressStateProbe);
@@ -83,9 +83,9 @@ bool CProgress::MaybeUpdate(uint64_t u64Index)
     return bUpdated;
 }
 
-void CProgress::optimisticUpdate(uint64_t n)
+void CProgress::OptimisticUpdate(uint64_t u64Index)
 {
-    m_u64NextLogIndex = n + 1;
+    m_u64NextLogIndex = u64Index + 1;
 }
 
 void CProgress::snapshotFailure(void)
@@ -97,7 +97,7 @@ void CProgress::snapshotFailure(void)
 // Otherwise it decreases the progress next index to min(rejected, last) and returns true.
 bool CProgress::maybeDecrTo(uint64_t rejected, uint64_t last)
 {
-    if (state_ == ProgressStateReplicate)
+    if (m_statePro == ProgressStateReplicate)
     {
         // the rejection must be stale if the progress has matched and "rejected"
         // is smaller than "match".
@@ -138,15 +138,15 @@ void CProgress::Resume(void)
 
 const char* CProgress::GetStateText()
 {
-    if (state_ == ProgressStateProbe)
+    if (m_statePro == ProgressStateProbe)
     {
         return "ProgressStateProbe";
     }
-    if (state_ == ProgressStateSnapshot)
+    if (m_statePro == ProgressStateSnapshot)
     {
         return "ProgressStateSnapshot";
     }
-    if (state_ == ProgressStateReplicate)
+    if (m_statePro == ProgressStateReplicate)
     {
         return "ProgressStateReplicate";
     }
@@ -159,7 +159,7 @@ const char* CProgress::GetStateText()
 // MaxInflightMsgs limit.
 bool CProgress::IsPaused()
 {
-    switch (state_)
+    switch (m_statePro)
     {
     case ProgressStateProbe:
         return m_bPaused;
@@ -175,7 +175,7 @@ bool CProgress::IsPaused()
 // is equal or higher than the pendingSnapshot.
 bool CProgress::needSnapshotAbort(void)
 {
-    return state_ == ProgressStateSnapshot && m_u64MatchLogIndex >= pendingSnapshot_;
+    return m_statePro == ProgressStateSnapshot && m_u64MatchLogIndex >= pendingSnapshot_;
 }
 
 std::string CProgress::GetInfoText(void)

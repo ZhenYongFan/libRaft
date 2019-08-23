@@ -20,5 +20,18 @@ C++：支持C++11
 添加KV服务的实现
 （即将）添加锁服务的实现
 
-5、Todo
-将核心代码与Protobuffer解耦
+5、解决方案的组成
+libRaftCore Raft核心算法，不依赖任何第三方库
+TestRaftCore 采用cppunit的libRaftCore测试用例，实现network类模仿接口调用
+libRaftExt  Raft扩展库，
+1、采用Protobuffer实现协议串行化；
+2、采用libevent实现网络；
+3、采用Log4cxx实现日志；
+4、采用Rocksdb实现日志持久化存储
+5、采用RocksDb实现一个KV服务
+6、采用libconfig++实现配置文件的读取
+TestRaft 测试libRaftExt的用例
+TestServer 实现简单的Raft KV Service
+TestCliebt 实现简单的Raft Kv Client
+
+

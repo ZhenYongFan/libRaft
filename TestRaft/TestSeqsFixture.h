@@ -5,7 +5,7 @@ class CTestSeqsFixture : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE(CTestSeqsFixture);
 
-    CPPUNIT_TEST(TestExample);
+    CPPUNIT_TEST(TestSeqs);
 
     CPPUNIT_TEST_SUITE_END();
 public:
@@ -17,6 +17,6 @@ public:
 
     void tearDown(void);
 
-    void TestExample(void);
+    void TestSeqs(void);
 };
 

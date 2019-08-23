@@ -39,9 +39,8 @@ bool CRaftConfig::ValidateNodes(std::string &strErrMsg) const
         bool bFound = false;
         std::map<uint32_t, bool> mapIDs;
         std::map<std::string, bool> mapHost;
-        for (size_t nNode = 0; nNode < m_aNodes.size() && strErrMsg.empty(); nNode++)
+        for (auto const &info : m_aNodes)
         {
-            const CRaftInfo &info = m_aNodes[nNode];
             if (info.m_nNodeId == m_nRaftID)
                 bFound = true;
             if (mapIDs.find(info.m_nNodeId) == mapIDs.end())
@@ -70,8 +69,8 @@ bool CRaftConfig::ValidateNodes(std::string &strErrMsg) const
 void CRaftConfig::GetPeers(std::vector<uint32_t> &peers) const
 {
     peers.clear();
-    for (size_t nNode = 0; nNode < m_aNodes.size(); nNode++)
-        peers.push_back(m_aNodes[nNode].m_nNodeId);
+    for (auto const &infoNode : m_aNodes)
+        peers.push_back(infoNode.m_nNodeId);
 }
 
 const CRaftInfo & CRaftConfig::GetSelf(void)

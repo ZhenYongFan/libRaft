@@ -357,12 +357,12 @@ void CRaft::SendAppend(uint32_t nToID)
         if (entries.size() > 0)
         {
             uint64_t last;
-            switch (pProgress->state_)
+            switch (pProgress->m_statePro)
             {
              // optimistically increase the next when in ProgressStateReplicate
             case ProgressStateReplicate:
                 last = entries[entries.size() - 1].index();
-                pProgress->optimisticUpdate(last);
+                pProgress->OptimisticUpdate(last);
                 pProgress->ins_.Add(last);
                 break;
             case ProgressStateProbe:
@@ -1093,7 +1093,7 @@ void CRaft::OnMsgProp(const CMessage &msg)
 void CRaft::OnMsgSnapStatus(const CMessage &msg, CProgress * pProgress)
 {
     uint32_t from = msg.from();
-    if (pProgress->state_ != ProgressStateSnapshot)
+    if (pProgress->m_statePro != ProgressStateSnapshot)
     {
         return;
     }
@@ -1120,7 +1120,7 @@ void CRaft::OnMsgUnreachable(const CMessage &msg, CProgress * pProgress)
 {
     // During optimistic replication, if the remote becomes unreachable,
     // there is huge probability that a CMessage::MsgApp is lost.
-    if (pProgress->state_ == ProgressStateReplicate)
+    if (pProgress->m_statePro == ProgressStateReplicate)
         pProgress->BecomeProbe();
     m_pLogger->Debugf(__FILE__, __LINE__, "%x failed to send message to %x because it is unreachable [%s]",
         m_pConfig->m_nRaftID, msg.from(), pProgress->GetInfoText().c_str());
@@ -1184,7 +1184,7 @@ void CRaft::OnAppResp(const CMessage& msg, CProgress *pProgress)
         {
             m_pLogger->Debugf(__FILE__, __LINE__, "%x decreased progress of %x to [%s]",
                 m_pConfig->m_nRaftID, from, pProgress->GetInfoText().c_str());
-            if (pProgress->state_ == ProgressStateReplicate)
+            if (pProgress->m_statePro == ProgressStateReplicate)
                 pProgress->BecomeProbe();
             SendAppend(from);
         }
@@ -1194,15 +1194,15 @@ void CRaft::OnAppResp(const CMessage& msg, CProgress *pProgress)
         bool oldPaused = pProgress->IsPaused();
         if (pProgress->MaybeUpdate(u64Index))
         {
-            if (pProgress->state_ == ProgressStateProbe)
+            if (pProgress->m_statePro == ProgressStateProbe)
                 pProgress->BecomeReplicate();
-            else if (pProgress->state_ == ProgressStateSnapshot && pProgress->needSnapshotAbort())
+            else if (pProgress->m_statePro == ProgressStateSnapshot && pProgress->needSnapshotAbort())
             {
                 m_pLogger->Debugf(__FILE__, __LINE__, "%x snapshot aborted, resumed sending replication messages to %x [%s]",
                     m_pConfig->m_nRaftID, from, pProgress->GetInfoText().c_str());
                 pProgress->BecomeProbe();
             }
-            else if (pProgress->state_ == ProgressStateReplicate)
+            else if (pProgress->m_statePro == ProgressStateReplicate)
                 pProgress->ins_.freeTo(u64Index);
             //尝试提交日志
             if (MaybeCommit())
@@ -1234,7 +1234,7 @@ void CRaft::OnHeartbeatResp(const CMessage& msg, CProgress *pProgress)
     pProgress->Resume();
 
     // free one slot for the full inflights window to allow progress.
-    if (pProgress->state_ == ProgressStateReplicate && pProgress->ins_.IsFull())
+    if (pProgress->m_statePro == ProgressStateReplicate && pProgress->ins_.IsFull())
         pProgress->ins_.freeFirstOne();
     if (pProgress->m_u64MatchLogIndex < m_pRaftLog->GetLastIndex())
         SendAppend(from);

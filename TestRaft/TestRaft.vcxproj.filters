@@ -36,6 +36,12 @@
     <ClInclude Include="TestSeqsFixture.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="TestEventBaseFixtrue.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TestRocksFixtrue.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TestRaft.cpp">
@@ -48,6 +54,18 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="TestSeqsFixture.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TestServer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TestClient.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TestEventBaseFixtrue.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TestRocksFixtrue.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

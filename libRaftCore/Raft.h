@@ -17,7 +17,7 @@ public:
     enum ECampaignType
     {
         ///\brief 预选阶段，用下一任期号尝试预选，通过后才任期号加1开始正式选举
-        ///\remark 防止当前节点的任期号无效增长
+        ///\remark 防止网络分裂是当前节点的任期号无效增长，然后当网络连通后干扰正常的那部分子网
         ///\attention 当预选模式打开时生效
         campaignPreElection = 1,
 
@@ -25,7 +25,7 @@ public:
         ///\attention 如果当前配置支持预选，则这相当于选举的第二阶段
         campaignElection = 2,
 
-        campaignTransfer = 3 ///< 由sa指定选举某个Raft，要求当前Leader在适当时机放弃领导者状态，支持该Raft选举
+        campaignTransfer = 3 ///< 由sa指定选举某个Raft节点，要求当前Leader在适当时机放弃领导者状态，支持该Raft选举
     };
 public:
     ///\brief 构造函数
@@ -50,7 +50,7 @@ public:
     ///\param msg 消息体
     ///\return 错误号
     ///\attention OnTick和Step是对外接口，需要考虑多线程安全问题,下面其他接口为偷懒模式下的为单元测试接口
-    virtual int  Step(const CMessage& msg);
+    virtual int Step(const CMessage& msg);
 
     //下面的Public接口为了单元测试临时由protected改为public，代码重构完成采用单独测试派生类的方式改善
 
@@ -144,8 +144,14 @@ public:
     ///\return 投票情况: 0 投赞成票；1 投反对票; 2 没有投票
     int CheckVoted(uint32_t nRaftID);
 
+    ///\brief 取得当前队列中等待发送的Message数组
+    ///\param msgs 返回的Message数组,一般是由FreeMessages释放
+    ///\attention 测试用代码
     void ReadMessages(vector<CMessage*> &msgs);
 
+    ///\brief 释放一个Message数组
+    ///\param msgs Message数组,一般是由ReadMessages获得
+    ///\attention 测试用代码
     void FreeMessages(vector<CMessage*> &msgs);
 
     ///\brief Follower和Candidates处理Tick定时器消息

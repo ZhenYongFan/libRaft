@@ -31,10 +31,10 @@ int CRaftMemStorage::InitialState(CHardState &hs, CConfState &cs)
     return OK;
 }
 
-int CRaftMemStorage::SetHardState(const CHardState& hs)
+int CRaftMemStorage::SetHardState(const CHardState& hardState)
 {
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
-    hardState_ = hs;
+    hardState_ = hardState;
     return OK;
 }
 
@@ -76,59 +76,115 @@ int CRaftMemStorage::SetApplied(uint64_t u64tApplied)
 
 int CRaftMemStorage::Term(uint64_t u64Index, uint64_t &u64Term)
 {
-    std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
+    int nErrorNo = OK;
     u64Term = 0;
-    uint64_t offset = entries_[0].index();
-    if (u64Index < offset)
+    std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
+    uint64_t u64Offset = entries_[0].index();
+    if (u64Index < u64Offset)
+        nErrorNo = ErrCompacted;
+    else if (u64Index - u64Offset >= entries_.size())
+        nErrorNo = ErrUnavailable;
+    else
+        u64Term = entries_[u64Index - u64Offset].term();
+    return nErrorNo;
+}
+
+// Append the new entries to storage.
+// entries[0].Index > ms.entries[0].Index
+int CRaftMemStorage::Append(const EntryVec& entries)
+{
+    int nErrorNo = OK;
+    if (!entries.empty())
     {
-        return ErrCompacted;
+        std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
+        EntryVec appendEntries = entries;
+
+        uint64_t first = firstIndex();
+        uint64_t last = appendEntries[0].index() + appendEntries.size() - 1;
+
+        if (last < first)
+        {
+            return OK;
+        }
+
+        // truncate compacted entries
+        if (first > appendEntries[0].index())
+        {
+            uint64_t index = first - appendEntries[0].index();
+            appendEntries.erase(appendEntries.begin(), appendEntries.begin() + index);
+        }
+
+        uint64_t offset = appendEntries[0].index() - entries_[0].index();
+        if (entries_.size() > offset)
+        {
+            entries_.erase(entries_.begin(), entries_.begin() + offset);
+            int i;
+            for (i = 0; i < appendEntries.size(); ++i)
+            {
+                entries_.push_back(appendEntries[i]);
+            }
+            return OK;
+        }
+
+        if (entries_.size() == offset)
+        {
+            int i;
+            for (i = 0; i < appendEntries.size(); ++i)
+            {
+                entries_.push_back(appendEntries[i]);
+            }
+            return OK;
+        }
+
+        m_pLogger->Fatalf(__FILE__, __LINE__, "missing log entry [last: %llu, append at: %llu]",
+            lastIndex(), appendEntries[0].index());
     }
-    if (u64Index - offset >= entries_.size())
-    {
-        return ErrUnavailable;
-    }
-    u64Term = entries_[u64Index - offset].term();
-    return OK;
+    return nErrorNo;
 }
 
 int CRaftMemStorage::Entries(uint64_t u64Low, uint64_t u64High, uint64_t u64MaxSize, vector<CRaftEntry> &entries)
 {
+    int nErrorNo = OK;
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
     uint64_t u64Offset = entries_[0].index();
     if (u64Low <= u64Offset)
-    {
-        return ErrCompacted;
-    }
-    if (u64High > lastIndex() + 1)
-    {
-        return ErrUnavailable;
-    }
-    // only contains dummy entries.
-    if (entries_.size() == 1)
-    {
-        return ErrUnavailable;
-    }
-
-    for (int i = int(u64Low - u64Offset); i < int(u64High - u64Offset); ++i)
-    {
-        entries.push_back(entries_[i]);
-    }
-    if (m_pRaftSerializer != NULL)
-    {
-        limitSize(u64MaxSize, entries, *m_pRaftSerializer);
-    }
+        nErrorNo = ErrCompacted;
+    else if (u64High > lastIndex() + 1)
+        nErrorNo = ErrUnavailable;
+    else if (entries_.size() == 1)// only contains dummy entries.
+        nErrorNo = ErrUnavailable;
     else
     {
+        uint64_t u64Size = 0;
+        CRaftSerializer *pRaftSerializer = m_pRaftSerializer;
         CRaftSerializer serializer;
-        limitSize(u64MaxSize, entries, serializer);
+        if (pRaftSerializer == NULL)
+            pRaftSerializer = &serializer;
+
+        for (int nIndex = int(u64Low - u64Offset); nIndex < int(u64High - u64Offset); ++nIndex)
+        {
+            if (0 == u64MaxSize)
+            {
+                entries.push_back(entries_[nIndex]);
+                break;
+            }
+            else
+            {
+                u64Size += pRaftSerializer->ByteSize(entries_[nIndex]);
+                if (u64Size > u64MaxSize)
+                    break;
+                else
+                    entries.push_back(entries_[nIndex]);
+            }
+        }
     }
-    return OK;
+    return nErrorNo;
 }
 
-int CRaftMemStorage::GetSnapshot(CSnapshot **snapshot)
+int CRaftMemStorage::GetSnapshot(CSnapshot **pSnapshot)
 {
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
-    *snapshot = m_pSnapShot;
+    *pSnapshot = m_pSnapShot;
     return OK;
 }
 
@@ -184,60 +240,6 @@ int CRaftMemStorage::ApplySnapshot(const CSnapshot& snapshot)
     entry.set_index(snapshot.metadata().index());
     entry.set_term(snapshot.metadata().term());
     entries_.push_back(entry);
-    return OK;
-}
-
-// Append the new entries to storage.
-// entries[0].Index > ms.entries[0].Index
-int CRaftMemStorage::Append(const EntryVec& entries)
-{
-    if (entries.empty())
-    {
-        return OK;
-    }
-
-    std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
-    EntryVec appendEntries = entries;
-
-    uint64_t first = firstIndex();
-    uint64_t last = appendEntries[0].index() + appendEntries.size() - 1;
-
-    if (last < first)
-    {
-        return OK;
-    }
-
-    // truncate compacted entries
-    if (first > appendEntries[0].index())
-    {
-        uint64_t index = first - appendEntries[0].index();
-        appendEntries.erase(appendEntries.begin(), appendEntries.begin() + index);
-    }
-
-    uint64_t offset = appendEntries[0].index() - entries_[0].index();
-    if (entries_.size() > offset)
-    {
-        entries_.erase(entries_.begin(), entries_.begin() + offset);
-        int i;
-        for (i = 0; i < appendEntries.size(); ++i)
-        {
-            entries_.push_back(appendEntries[i]);
-        }
-        return OK;
-    }
-
-    if (entries_.size() == offset)
-    {
-        int i;
-        for (i = 0; i < appendEntries.size(); ++i)
-        {
-            entries_.push_back(appendEntries[i]);
-        }
-        return OK;
-    }
-
-    m_pLogger->Fatalf(__FILE__, __LINE__, "missing log entry [last: %llu, append at: %llu]",
-        lastIndex(), appendEntries[0].index());
     return OK;
 }
 

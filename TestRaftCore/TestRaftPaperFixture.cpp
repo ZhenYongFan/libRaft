@@ -125,7 +125,7 @@ CMessage acceptAndReply(CMessage *msg)
     return m;
 }
 
-void commitNoopEntry(CRaftFrame *pFrame,CRaft *r, CRaftStorage *s)
+void commitNoopEntry(CTestRaftFrame *pFrame,CRaft *r, CRaftStorage *s)
 {
     CPPUNIT_ASSERT_EQUAL(r->GetState(), eStateLeader);
     r->BcastAppend();
@@ -162,7 +162,7 @@ void testUpdateTermFromMessage(EStateType state)
     peers.push_back(1);
     peers.push_back(2);
     peers.push_back(3);
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
 
     switch (state)
@@ -226,7 +226,7 @@ void CTestRaftPaperFixture::TestStartAsFollower(void)
     peers.push_back(2);
     peers.push_back(3);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
     CPPUNIT_ASSERT_EQUAL(r->GetState(), eStateFollower);
     pFrame->Uninit();
@@ -246,7 +246,7 @@ void CTestRaftPaperFixture::TestLeaderBcastBeat(void)
     peers.push_back(2);
     peers.push_back(3);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->BecomeCandidate();
     r->BecomeLeader();
@@ -312,7 +312,7 @@ void testNonleaderStartElection(EStateType state)
     peers.push_back(2);
     peers.push_back(3);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
     switch (state)
     {
@@ -476,7 +476,7 @@ void CTestRaftPaperFixture::TestLeaderElectionInOneRoundRPC(void)
 
         vector<uint32_t> peers;
         idsBySize(t.size, &peers);
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
         CRaft *r = pFrame->m_pRaftNode;
 
         {
@@ -537,7 +537,7 @@ void CTestRaftPaperFixture::TestFollowerVote(void)
         peers.push_back(2);
         peers.push_back(3);
 
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
         CRaft *r = pFrame->m_pRaftNode;
         CHardState hs;
         hs.set_term(1);
@@ -608,7 +608,7 @@ void CTestRaftPaperFixture::TestCandidateFallback(void)
         peers.push_back(2);
         peers.push_back(3);
 
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
         CRaft *r = pFrame->m_pRaftNode;
         {
             CMessage msg;
@@ -639,7 +639,7 @@ void testNonleaderElectionTimeoutRandomized(EStateType state)
     peers.push_back(2);
     peers.push_back(3);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, et, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, et, 1);
     CRaft *r = pFrame->m_pRaftNode;
     
     map<int, bool> timeouts;
@@ -696,13 +696,13 @@ void testNonleadersElectionTimeoutNonconflict(EStateType state)
     uint32_t et = 10;
     int size = 5;
     vector<CRaft*> rs;
-    vector<CRaftFrame*> frames;
+    vector<CTestRaftFrame*> frames;
     vector<uint32_t> peers;
     idsBySize(size, &peers);
     int i;
     for (i = 0; i < peers.size(); ++i)
     {
-        CRaftFrame *pFrame = newTestRaft(1, peers, et, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, et, 1);
         CRaft *r = pFrame->m_pRaftNode;
         rs.push_back(r);
         frames.push_back(pFrame);
@@ -730,7 +730,7 @@ void testNonleadersElectionTimeoutNonconflict(EStateType state)
         {
             for (j = 0; j < rs.size(); ++j)
             {
-                CRaftFrame *pFrame = frames[j];
+                CTestRaftFrame *pFrame = frames[j];
                 CRaft *r = rs[j];
                 r->OnTick();
                 vector<CMessage*> msgs;
@@ -784,7 +784,7 @@ void CTestRaftPaperFixture::TestLeaderStartReplication(void)
     peers.push_back(2);
     peers.push_back(3);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->BecomeCandidate();
     r->BecomeLeader();
@@ -862,7 +862,7 @@ void CTestRaftPaperFixture::TestLeaderCommitEntry(void)
     peers.push_back(2);
     peers.push_back(3);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->BecomeCandidate();
     r->BecomeLeader();
@@ -988,7 +988,7 @@ void CTestRaftPaperFixture::TestLeaderAcknowledgeCommit(void)
         vector<uint32_t> peers;
         idsBySize(t.size, &peers);
 
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
         CRaft *r = pFrame->m_pRaftNode;
         r->BecomeCandidate();
         r->BecomeLeader();
@@ -1076,7 +1076,7 @@ void CTestRaftPaperFixture::TestLeaderCommitPrecedingEntries(void)
         peers.push_back(2);
         peers.push_back(3);
 
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1,t);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1,t);
         CRaft *r = pFrame->m_pRaftNode;
         CRaftMemLog *pLog = dynamic_cast<CRaftMemLog *> (r->m_pRaftLog);
         CHardState hs;
@@ -1215,7 +1215,7 @@ void CTestRaftPaperFixture::TestFollowerCommitEntry(void)
         peers.push_back(2);
         peers.push_back(3);
 
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
         CRaft *r = pFrame->m_pRaftNode;
         r->BecomeFollower(1, 2);
 
@@ -1300,7 +1300,7 @@ void CTestRaftPaperFixture::TestFollowerCheckMsgApp(void)
         peers.push_back(2);
         peers.push_back(3);
 
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1,entries);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1,entries);
         CRaft *r = pFrame->m_pRaftNode;
 
         CHardState hs;
@@ -1458,7 +1458,7 @@ void CTestRaftPaperFixture::TestFollowerAppendEntries(void)
         entry.set_index(2);
         appEntries.push_back(entry);
 
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1,appEntries);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1,appEntries);
         CRaft *r = pFrame->m_pRaftNode;
         CRaftMemLog *pLog = dynamic_cast<CRaftMemLog *> (r->m_pRaftLog);
         r->BecomeFollower(2, 2);
@@ -1648,7 +1648,7 @@ void CTestRaftPaperFixture::TestLeaderSyncFollowerLog(void)
         peers.push_back(3);
 
         EntryVec appEntries = ents;
-        CRaftFrame *pLeaderFrame = newTestRaft(1, peers, 10, 1, appEntries);
+        CTestRaftFrame *pLeaderFrame = newTestRaft(1, peers, 10, 1, appEntries);
         CRaft *leader = pLeaderFrame->m_pRaftNode;
         CRaftMemLog *pLeaderLog = dynamic_cast<CRaftMemLog *> (leader->m_pRaftLog);
         {
@@ -1659,7 +1659,7 @@ void CTestRaftPaperFixture::TestLeaderSyncFollowerLog(void)
             leader->SetHardState(hs);
         }
 
-        CRaftFrame *pFollowerFrame = newTestRaft(2, peers, 10, 1, t);
+        CTestRaftFrame *pFollowerFrame = newTestRaft(2, peers, 10, 1, t);
         CRaft *follower = pFollowerFrame->m_pRaftNode;
         CRaftMemLog *pFollowerLog = dynamic_cast<CRaftMemLog *> (follower->m_pRaftLog);
 
@@ -1763,7 +1763,7 @@ void CTestRaftPaperFixture::TestVoteRequest(void)
         peers.push_back(1);
         peers.push_back(2);
         peers.push_back(3);
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
         CRaft *r = pFrame->m_pRaftNode;
         {
             CMessage msg;
@@ -1930,7 +1930,7 @@ void CTestRaftPaperFixture::TestVoter(void)
         peers.push_back(1);
         peers.push_back(2);
 
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1,t.ents);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1,t.ents);
         CRaft *r = pFrame->m_pRaftNode;
         {
             CMessage msg;
@@ -2001,7 +2001,7 @@ void CTestRaftPaperFixture::TestLeaderOnlyCommitsLogFromCurrentTerm(void)
         peers.push_back(1);
         peers.push_back(2);
 
-        CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1, ents);
+        CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1, ents);
         CRaft *r = pFrame->m_pRaftNode;
 
         CHardState hs;
@@ -2058,7 +2058,7 @@ void CTestRaftPaperFixture::TestSendingSnapshotSetPendingSnapshot(void)
     vector<uint32_t> peers;
     peers.push_back(1);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
 
     r->Restore(testingSnap());
@@ -2091,7 +2091,7 @@ void CTestRaftPaperFixture::TestPendingSnapshotPauseReplication(void)
     peers.push_back(1);
     peers.push_back(2);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
 
     r->Restore(testingSnap());
@@ -2125,7 +2125,7 @@ void CTestRaftPaperFixture::TestSnapshotFailure(void)
     vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->Restore(testingSnap());
     r->BecomeCandidate();
@@ -2156,7 +2156,7 @@ void CTestRaftPaperFixture::TestSnapshotSucceed(void)
     vector<uint32_t> peers;
     peers.push_back(1);
     peers.push_back(2);
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->Restore(testingSnap());
     r->BecomeCandidate();
@@ -2189,7 +2189,7 @@ void CTestRaftPaperFixture::TestSnapshotAbort(void)
     peers.push_back(1);
     peers.push_back(2);
 
-    CRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
+    CTestRaftFrame *pFrame = newTestRaft(1, peers, 10, 1);
     CRaft *r = pFrame->m_pRaftNode;
     r->Restore(testingSnap());
     r->BecomeCandidate();

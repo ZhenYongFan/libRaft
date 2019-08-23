@@ -1,10 +1,10 @@
 #pragma once
-#include "libRaftCore.h"
+#include "libRaftExt.h"
 
 class CRaftClientPool;
 
 ///\brief Raft客户端
-class LIBRAFTCORE_API CRaftClient
+class LIBRAFTEXT_API CRaftClient
 {
 public:
     CRaftClient(void);
@@ -30,7 +30,7 @@ protected:
 };
 #if 0
 ///\brief 管理员客户端
-class LIBRAFTCORE_API CRaftAdminClient
+class LIBRAFTEXT_API CRaftAdminClient
 {
 public:
     CRaftAdminClient();

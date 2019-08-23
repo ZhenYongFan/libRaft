@@ -21,6 +21,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libRaftExt", "libRaftExt\li
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestRaft", "TestRaft\TestRaft.vcxproj", "{71C76345-DB3C-4B0C-A6D9-5ED81E6BBE4C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BE68141F-E730-4EB7-B0AE-397F6BBE56E1} = {BE68141F-E730-4EB7-B0AE-397F6BBE56E1}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libEvent_core", "libEvent_core\libEvent_core.vcxproj", "{96163F69-B259-48A9-85FE-F47EB61AE6D7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,6 +49,10 @@ Global
 		{71C76345-DB3C-4B0C-A6D9-5ED81E6BBE4C}.Debug|x64.Build.0 = Debug|x64
 		{71C76345-DB3C-4B0C-A6D9-5ED81E6BBE4C}.Release|x64.ActiveCfg = Release|x64
 		{71C76345-DB3C-4B0C-A6D9-5ED81E6BBE4C}.Release|x64.Build.0 = Release|x64
+		{96163F69-B259-48A9-85FE-F47EB61AE6D7}.Debug|x64.ActiveCfg = Debug|x64
+		{96163F69-B259-48A9-85FE-F47EB61AE6D7}.Debug|x64.Build.0 = Debug|x64
+		{96163F69-B259-48A9-85FE-F47EB61AE6D7}.Release|x64.ActiveCfg = Release|x64
+		{96163F69-B259-48A9-85FE-F47EB61AE6D7}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

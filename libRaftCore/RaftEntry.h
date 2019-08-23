@@ -5,10 +5,11 @@
 class LIBRAFTCORE_API CRaftEntry
 {
 public:
+    ///\brief 日志类型
     enum EType
     {
-        eNormal = 0,
-        eConfChange = 1
+        eNormal = 0,     ///< 普通日志
+        eConfChange = 1  ///< 组员变化日志
     };
 public:
     CRaftEntry(void);
@@ -221,7 +222,8 @@ public:
         MsgReadIndex = 15,      //客户端发往集群的只读消息使用MsgReadIndex消息（只读的两种模式：ReadOnlySafe和ReadOnlyLeaseBased）
         MsgReadIndexResp = 16,  //MsgReadIndex消息的响应消息
         MsgPreVote = 17,        //PreCandidate状态下的节点发送的消息
-        MsgPreVoteResp = 18     //预选节点收到的响应消息
+        MsgPreVoteResp = 18,     //预选节点收到的响应消息
+        MsgNoUsed
     };
 public:
     CMessage(void);

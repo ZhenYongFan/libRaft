@@ -38,7 +38,6 @@ DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 		//  问题。
 
 		new CDynLinkLibrary(libRaftExtDLL);
-
 	}
 	else if (dwReason == DLL_PROCESS_DETACH)
 	{

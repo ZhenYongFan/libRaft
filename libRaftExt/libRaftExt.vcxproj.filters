@@ -19,6 +19,9 @@
     <Filter Include="service">
       <UniqueIdentifier>{ea610737-31b7-4d8f-85e6-a5c6f1524f52}</UniqueIdentifier>
     </Filter>
+    <Filter Include="protobuffer">
+      <UniqueIdentifier>{e651a77c-4de5-41eb-8e30-bc8b34cd7793}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -72,11 +75,26 @@
     <ClCompile Include="network\RaftSession.cpp">
       <Filter>network</Filter>
     </ClCompile>
-    <ClCompile Include="network\rpc.pb.cpp">
-      <Filter>network</Filter>
-    </ClCompile>
     <ClCompile Include="network\SequenceID.cpp">
       <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuffer\raft.pb.cpp">
+      <Filter>protobuffer</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuffer\rpc.pb.cpp">
+      <Filter>protobuffer</Filter>
+    </ClCompile>
+    <ClCompile Include="protobuffer\RaftProtoBufferSerializer.cpp">
+      <Filter>protobuffer</Filter>
+    </ClCompile>
+    <ClCompile Include="RequestOp.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="RaftFrame.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="RaftExtUtil.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -86,8 +104,11 @@
     <None Include="res\libRaftExt.rc2">
       <Filter>资源文件</Filter>
     </None>
-    <None Include="network\rpc.proto">
-      <Filter>network</Filter>
+    <None Include="protobuffer\raft.proto">
+      <Filter>protobuffer</Filter>
+    </None>
+    <None Include="protobuffer\rpc.proto">
+      <Filter>protobuffer</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -142,13 +163,28 @@
     <ClInclude Include="network\RaftSession.h">
       <Filter>network</Filter>
     </ClInclude>
-    <ClInclude Include="network\rpc.pb.h">
-      <Filter>network</Filter>
-    </ClInclude>
     <ClInclude Include="network\SequenceID.h">
       <Filter>network</Filter>
     </ClInclude>
     <ClInclude Include="libRaftExt.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuffer\raft.pb.h">
+      <Filter>protobuffer</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuffer\rpc.pb.h">
+      <Filter>protobuffer</Filter>
+    </ClInclude>
+    <ClInclude Include="protobuffer\RaftProtoBufferSerializer.h">
+      <Filter>protobuffer</Filter>
+    </ClInclude>
+    <ClInclude Include="RequestOp.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="RaftFrame.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="RaftExtUtil.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

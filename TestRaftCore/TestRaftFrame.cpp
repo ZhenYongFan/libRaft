@@ -32,10 +32,10 @@ CRaftConfig* newTestConfig(uint32_t id, const vector<uint32_t>& peers, int elect
 }
 
 
-CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents)
+CTestRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents)
 {
     std::string strErrMsg;
-    CRaftFrame *pFrame = new CRaftFrame();
+    CTestRaftFrame *pFrame = new CTestRaftFrame();
     if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, ents,NULL, strErrMsg))
     {
         delete pFrame;
@@ -44,10 +44,10 @@ CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election
     return pFrame;
 }
 
-CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents, uint64_t u64Term)
+CTestRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents, uint64_t u64Term)
 {
     std::string strErrMsg;
-    CRaftFrame *pFrame = new CRaftFrame();
+    CTestRaftFrame *pFrame = new CTestRaftFrame();
     if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, ents, u64Term,NULL, strErrMsg))
     {
         delete pFrame;
@@ -56,10 +56,10 @@ CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election
     return pFrame;
 }
 
-CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents, uint64_t u64Term, uint64_t u64Committed, uint64_t u64Applied)
+CTestRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents, uint64_t u64Term, uint64_t u64Committed, uint64_t u64Applied)
 {
     std::string strErrMsg;
-    CRaftFrame *pFrame = new CRaftFrame();
+    CTestRaftFrame *pFrame = new CTestRaftFrame();
     if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, ents, u64Term, u64Committed, u64Applied,NULL, strErrMsg))
     {
         delete pFrame;
@@ -68,10 +68,10 @@ CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election
     return pFrame;
 }
 
-CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents, ConfigFun funCfg)
+CTestRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents, ConfigFun funCfg)
 {
     std::string strErrMsg;
-    CRaftFrame *pFrame = new CRaftFrame();
+    CTestRaftFrame *pFrame = new CTestRaftFrame();
     if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, ents, funCfg, strErrMsg))
     {
         delete pFrame;
@@ -80,10 +80,10 @@ CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election
     return pFrame;
 }
 
-CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CHardState &hs, ConfigFun funCfg)
+CTestRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CHardState &hs, ConfigFun funCfg)
 {
     std::string strErrMsg;
-    CRaftFrame *pFrame = new CRaftFrame();
+    CTestRaftFrame *pFrame = new CTestRaftFrame();
     if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, hs, funCfg, strErrMsg))
     {
         delete pFrame;
@@ -92,10 +92,10 @@ CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election
     return pFrame;
 }
 
-CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb)
+CTestRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb)
 {
     std::string strErrMsg;
-    CRaftFrame *pFrame = new CRaftFrame();
+    CTestRaftFrame *pFrame = new CTestRaftFrame();
     EntryVec ents;
     if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, ents,NULL, strErrMsg))
     {
@@ -105,10 +105,10 @@ CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election
     return pFrame;
 }
 
-CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CSnapshot &ss)
+CTestRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CSnapshot &ss)
 {
     std::string strErrMsg;
-    CRaftFrame *pFrame = new CRaftFrame();
+    CTestRaftFrame *pFrame = new CTestRaftFrame();
     EntryVec ents;
     if (!pFrame->Init(id, peers, election, hb, &kDefaultLogger, ss, strErrMsg))
     {
@@ -118,7 +118,7 @@ CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election
     return pFrame;
 }
 
-CRaftFrame::CRaftFrame(void)
+CTestRaftFrame::CTestRaftFrame(void)
 {
     m_pMsgQueue = NULL;
     m_pIoQueue = NULL;
@@ -127,12 +127,12 @@ CRaftFrame::CRaftFrame(void)
     m_pRaftNode = NULL;
 }
 
-CRaftFrame::~CRaftFrame(void)
+CTestRaftFrame::~CTestRaftFrame(void)
 {
    // Uninit();
 }
 
-bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, CSnapshot &ss, std::string &strErrMsg)
+bool CTestRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, CSnapshot &ss, std::string &strErrMsg)
 {
     bool bInit = false;
     m_pConfig = newTestConfig(id, peers, election, hb);
@@ -153,7 +153,7 @@ bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, 
     return bInit;
 }
 
-bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, EntryVec &ents, ConfigFun funCfg, std::string &strErrMsg)
+bool CTestRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, EntryVec &ents, ConfigFun funCfg, std::string &strErrMsg)
 {
     bool bInit = false;
     m_pConfig = newTestConfig(id, peers, election, hb);
@@ -176,7 +176,7 @@ bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, 
     return bInit;
 }
 
-bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, EntryVec &ents, uint64_t u64Term, ConfigFun funCfg, std::string &strErrMsg)
+bool CTestRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, EntryVec &ents, uint64_t u64Term, ConfigFun funCfg, std::string &strErrMsg)
 {
     bool bInit = false;
     m_pConfig = newTestConfig(id, peers, election, hb);
@@ -200,7 +200,7 @@ bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, 
     return bInit;
 }
 
-bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, EntryVec &ents, uint64_t u64Term, uint64_t u64Committed, uint64_t u64Applied, ConfigFun funCfg, std::string &strErrMsg)
+bool CTestRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, EntryVec &ents, uint64_t u64Term, uint64_t u64Committed, uint64_t u64Applied, ConfigFun funCfg, std::string &strErrMsg)
 {
     bool bInit = false;
     m_pConfig = newTestConfig(id, peers, election, hb);
@@ -228,7 +228,7 @@ bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, 
     return bInit;
 }
 
-bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, CHardState &hs, ConfigFun funCfg, std::string &strErrMsg)
+bool CTestRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, CHardState &hs, ConfigFun funCfg, std::string &strErrMsg)
 {
     bool bInit = false;
     m_pConfig = newTestConfig(id, peers, election, hb);
@@ -251,7 +251,7 @@ bool CRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int election, 
     return bInit;
 }
 
-void CRaftFrame::Uninit(void)
+void CTestRaftFrame::Uninit(void)
 {
     FreeLogOpt();
     FreeMessages();
@@ -288,7 +288,7 @@ void CRaftFrame::Uninit(void)
     }
 }
 
-void CRaftFrame::ReadLogOpt(vector<CLogOperation*> &opts, int nType)
+void CTestRaftFrame::ReadLogOpt(vector<CLogOperation*> &opts, int nType)
 {
     FreeLogOpt(opts);
     void *pOpt = m_pIoQueue->Pop(0);
@@ -303,14 +303,14 @@ void CRaftFrame::ReadLogOpt(vector<CLogOperation*> &opts, int nType)
     }
 }
 
-void CRaftFrame::FreeLogOpt(vector<CLogOperation*> &opts)
+void CTestRaftFrame::FreeLogOpt(vector<CLogOperation*> &opts)
 {
     for (auto pOpt : opts)
         delete pOpt;
     opts.clear();
 }
 
-void CRaftFrame::FreeLogOpt(void)
+void CTestRaftFrame::FreeLogOpt(void)
 {
     void *pOpt = m_pIoQueue->Pop(0);
     while (NULL != pOpt)
@@ -321,7 +321,7 @@ void CRaftFrame::FreeLogOpt(void)
     }
 }
 
-void CRaftFrame::ReadMessages(vector<CMessage*> &msgs)
+void CTestRaftFrame::ReadMessages(vector<CMessage*> &msgs)
 {
     FreeMessages(msgs);
     void *pMsg = m_pMsgQueue->Pop(0);
@@ -332,14 +332,14 @@ void CRaftFrame::ReadMessages(vector<CMessage*> &msgs)
     }
 }
 
-void CRaftFrame::FreeMessages(vector<CMessage*> &msgs)
+void CTestRaftFrame::FreeMessages(vector<CMessage*> &msgs)
 {
     for (auto pMsg : msgs)
         delete pMsg;
     msgs.clear();
 }
 
-void CRaftFrame::FreeMessages(void)
+void CTestRaftFrame::FreeMessages(void)
 {
     if (NULL != m_pMsgQueue)
     {

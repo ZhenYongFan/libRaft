@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "RaftAdminClient.h"
 #include "RaftClientPool.h"
-#include "rpc.pb.h"
+#include "protobuffer/rpc.pb.h"
 using namespace raftserverpb;
 
 CRaftClient::CRaftClient()

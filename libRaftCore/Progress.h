@@ -43,6 +43,7 @@ struct LIBRAFTCORE_API inflights
     }
 };
 
+///\brief 追随者节点日志同步的状态 
 enum ProgressState {
   ProgressStateProbe     = 0, ///< 表示节点一次不能向目标节点发送多条消息，只能待一条消息被响应之后，才能发送下一条消息
   ProgressStateReplicate = 1, ///< 表示正常的Entry记录复制状态，Leader节点向目标节点发送完消息之后，无需等待响应，即可开始后续消息发送。
@@ -74,7 +75,7 @@ public:
     ///\brief 取得当前状态
     inline ProgressState GetState(void)
     {
-        return state_;
+        return m_statePro;
     }
 
     ///\brief 状态转换为Probe
@@ -90,7 +91,7 @@ public:
     ///\param u64Index 日志索引号
     bool MaybeUpdate(uint64_t u64Index);
 
-    void optimisticUpdate(uint64_t n);
+    void OptimisticUpdate(uint64_t n);
     bool maybeDecrTo(uint64_t rejected, uint64_t last);
     void snapshotFailure();
 
@@ -115,7 +116,7 @@ public:
     //
     // When in ProgressStateSnapshot, leader should have sent out snapshot
     // before and stops sending any replication message.
-    ProgressState state_;
+    ProgressState m_statePro;
 
     ///\brief 在ProgressStateProbe状态时生效，如果是true，raft暂停向其发送复制消息
     bool m_bPaused;

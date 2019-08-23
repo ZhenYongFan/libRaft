@@ -103,8 +103,8 @@ enum RangeRequest_SortOrder : int {
   RangeRequest_SortOrder_NONE = 0,
   RangeRequest_SortOrder_ASCEND = 1,
   RangeRequest_SortOrder_DESCEND = 2,
-  RangeRequest_SortOrder_RangeRequest_SortOrder_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min(),
-  RangeRequest_SortOrder_RangeRequest_SortOrder_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max()
+  RangeRequest_SortOrder_RangeRequest_SortOrder_INT_MIN_SENTINEL_DO_NOT_USE_ = (std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min)(),
+  RangeRequest_SortOrder_RangeRequest_SortOrder_INT_MAX_SENTINEL_DO_NOT_USE_ = (std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max)()
 };
 bool RangeRequest_SortOrder_IsValid(int value);
 constexpr RangeRequest_SortOrder RangeRequest_SortOrder_SortOrder_MIN = RangeRequest_SortOrder_NONE;
@@ -127,8 +127,8 @@ enum RangeRequest_SortTarget : int {
   RangeRequest_SortTarget_CREATE = 2,
   RangeRequest_SortTarget_MOD = 3,
   RangeRequest_SortTarget_VALUE = 4,
-  RangeRequest_SortTarget_RangeRequest_SortTarget_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min(),
-  RangeRequest_SortTarget_RangeRequest_SortTarget_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max()
+  RangeRequest_SortTarget_RangeRequest_SortTarget_INT_MIN_SENTINEL_DO_NOT_USE_ = (std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::min)(),
+  RangeRequest_SortTarget_RangeRequest_SortTarget_INT_MAX_SENTINEL_DO_NOT_USE_ = (std::numeric_limits<::PROTOBUF_NAMESPACE_ID::int32>::max)()
 };
 bool RangeRequest_SortTarget_IsValid(int value);
 constexpr RangeRequest_SortTarget RangeRequest_SortTarget_SortTarget_MIN = RangeRequest_SortTarget_KEY;

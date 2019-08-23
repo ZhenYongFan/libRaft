@@ -258,7 +258,8 @@ void CTestMemStorageFixture::TestStorageEntries(void)
 
         int err = s.Entries(test.lo, test.hi, test.maxsize, ret);
         CPPUNIT_ASSERT_EQUAL(err, test.werr);
-        CPPUNIT_ASSERT(isDeepEqualEntries(ret, test.entries));
+        if(!isDeepEqualEntries(ret, test.entries))
+            CPPUNIT_ASSERT(isDeepEqualEntries(ret, test.entries));
     }
 }
 

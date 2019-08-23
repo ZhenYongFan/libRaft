@@ -16,7 +16,7 @@ size_t CRaftSerializer::ByteSize(const CRaftEntry &entry) const
            sizeof(int) + entry.m_strData.size();
 }
 
-void CRaftSerializer::SerializeAsString(const CRaftEntry &entry, std::string &strValue)
+void CRaftSerializer::SerializeEntry(const CRaftEntry &entry, std::string &strValue)
 {
     size_t nEntrySize = ByteSize(entry);
     strValue.resize(nEntrySize);
@@ -37,8 +37,9 @@ void CRaftSerializer::SerializeAsString(const CRaftEntry &entry, std::string &st
     memcpy(pstrBuffer, entry.m_strData.c_str(),nLen);
 }
 
-void CRaftSerializer::ParseFromString(CRaftEntry &entry,const std::string &strValue)
+bool CRaftSerializer::ParseEntry(CRaftEntry &entry,const std::string &strValue)
 {
+    bool bParse = false;
     entry.m_strData.clear();
     size_t nEntrySize = ByteSize(entry);
     if (strValue.size() >= nEntrySize)
@@ -56,12 +57,32 @@ void CRaftSerializer::ParseFromString(CRaftEntry &entry,const std::string &strVa
 
         int nLen = 0;
         memcpy(&nLen, pstrBuffer,sizeof(int));
-        if (strValue.size() == nEntrySize + nLen)
+        if (nLen > 0)
         {
-            entry.m_strData.resize(nLen);
-            pstrBuffer += sizeof(int);
-            char * pstrData = (char *)entry.m_strData.c_str();
-            memcpy(pstrData,pstrBuffer,nLen);
+            if (strValue.size() == nEntrySize + nLen)
+            {
+                entry.m_strData.resize(nLen);
+                pstrBuffer += sizeof(int);
+                char * pstrData = (char *)entry.m_strData.c_str();
+                memcpy(pstrData, pstrBuffer, nLen);
+                bParse = true;
+            }
+        }
+        else
+        {
+            bParse = true;
         }
     }
+    return bParse;
+}
+
+void CRaftSerializer::SerializeMessage(const CMessage &msg, std::string &strValue)
+{
+    assert(false);
+}
+
+bool CRaftSerializer::ParseMessage(CMessage &msg, const std::string &strValue)
+{
+    assert(false);
+    return false;
 }

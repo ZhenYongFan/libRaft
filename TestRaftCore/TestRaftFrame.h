@@ -6,12 +6,12 @@
 #include <RaftMemStorage.h>
 typedef void(*ConfigFun)(CRaftConfig*);
 
-class CRaftFrame
+class CTestRaftFrame
 {
 public:
-    CRaftFrame(void);
+    CTestRaftFrame(void);
     
-    virtual ~CRaftFrame(void);
+    virtual ~CTestRaftFrame(void);
     
     bool Init(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CLogger *pLogger, CSnapshot &ss, std::string &strErrMsg);
 
@@ -44,18 +44,18 @@ public:
     CRaftLog *m_pRaftLog;
     CRaft *m_pRaftNode;
 };
-CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb);
+CTestRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb);
 
-CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CSnapshot &ss);
+CTestRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CSnapshot &ss);
 
-CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents);
+CTestRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents);
 
-CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents,uint64_t u64Term);
+CTestRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents,uint64_t u64Term);
 
-CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents, uint64_t u64Term, uint64_t u64Committed, uint64_t u64Applied);
+CTestRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents, uint64_t u64Term, uint64_t u64Committed, uint64_t u64Applied);
 
-CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents, ConfigFun funCfg);
+CTestRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, EntryVec &ents, ConfigFun funCfg);
 
-CRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CHardState &hs, ConfigFun funCfg);
+CTestRaftFrame* newTestRaft(uint32_t id, const vector<uint32_t>& peers, int election, int hb, CHardState &hs, ConfigFun funCfg);
 
 void idsBySize(int size, vector<uint32_t>* ids);

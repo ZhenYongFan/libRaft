@@ -1,10 +1,10 @@
 #pragma once
-#include "libRaftCore.h"
+#include "libRaftExt.h"
 #include "EventSession.h"
 
 class CRaftQueue;
 
-class LIBRAFTCORE_API CRaftSession : public CEventSession
+class LIBRAFTEXT_API CRaftSession : public CEventSession
 {
 public:
     CRaftSession(CIoEventBase *pIoBase, struct bufferevent *pBufferEvent, uint32_t nSessionID);

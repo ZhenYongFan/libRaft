@@ -3,70 +3,42 @@
 #include "RaftServer.h"
 #include <event2/event.h>
 #include <event2/thread.h>
-
+#include "RaftFrame.h"
 #include "RaftSession.h"
 #include "RaftIoBase.h"
 #include "Raft.h"
 #include "RaftUtil.h"
 #include "RaftQueue.h"
+#include "protobuffer/RaftProtoBufferSerializer.h"
 #include "Log4CxxLogger.h"
 #include "KvService.h"
-
-#include "rpc.pb.h"
-using namespace raftserverpb;
+#include "RequestOp.h"
 
 CRaftServer::CRaftServer()
 {
     m_pSignalEvent = NULL;
     m_pTimerEvent = NULL;
-    m_pKvService = NULL;
     m_nTryTicks = 10;
+    m_pRaftFrame = NULL;
 }
 
 CRaftServer::~CRaftServer()
 {
 }
 
-void CRaftServer::SetRaftNode(CRaft *pRaftNode)
-{
-    m_pRaftNode = pRaftNode;
-}
-
-void CRaftServer::SetMsgQueue(CRaftQueue *pQueue)
-{
-    m_pMsgQueue = pQueue;
-}
-
-void CRaftServer::SetIoQueue(CRaftQueue *pQueue)
-{
-    m_pIoQueue = pQueue;
-}
-
-void CRaftServer::SetLogger(CLogger *pLogger)
-{
-    m_pLogger = pLogger;
-}
-
-void CRaftServer::SetKvService(CKvService *pKvService)
-{
-    m_pKvService = pKvService;
-}
-
-void CRaftServer::SetRaftLog(CRaftLog *pRaftLog)
-{
-    m_pRaftLog = pRaftLog;
-}
-
-bool CRaftServer::Init(void)
+bool CRaftServer::Init(CRaftFrame *pRaftFrame)
 {
     bool bInit = false;
-    const CRaftInfo &infoRaft = m_cfgSelf.GetSelf();
+    CRaftConfig * pConfig = pRaftFrame->GetRaftConfig();
+    const CRaftInfo &infoRaft = pConfig->GetSelf();
     AddListenCfg(infoRaft.m_strHost, infoRaft.m_nPort);
     AddListenCfg(infoRaft.m_strHost, infoRaft.m_nPeerPort);
     if (CListenEventBase::Init())
     {
         bInit = (InitSignal() && InitTimer());
-        if (!bInit)
+        if (bInit)
+            m_pRaftFrame = pRaftFrame;
+        else
             Uninit();
     }
     return bInit;
@@ -114,8 +86,9 @@ bool CRaftServer::InitTimer(void)
     if (NULL != pEvent)
     {
         struct timeval tv;
-        tv.tv_sec = m_cfgSelf.m_nMsPerTick /1000;
-        tv.tv_usec = (m_cfgSelf.m_nMsPerTick % 1000) * 1000;
+        CRaftConfig * pConfig = m_pRaftFrame->GetRaftConfig();
+        tv.tv_sec = pConfig->m_nMsPerTick /1000;
+        tv.tv_usec = (pConfig->m_nMsPerTick % 1000) * 1000;
         if (0 == evtimer_add(pEvent, &tv))
         {
             m_pTimerEvent = pEvent;
@@ -139,10 +112,11 @@ int CRaftServer::Start(void)
         if (NULL != m_pThreadMsg && NULL != m_pThreadIo)
         {
             nStart = 0;
-            for (size_t nNode = 0; nNode < m_cfgSelf.m_aNodes.size(); nNode++)
+            CRaftConfig * pConfig = m_pRaftFrame->GetRaftConfig();
+            for (size_t nNode = 0; nNode < pConfig->m_aNodes.size(); nNode++)
             {
-                const CRaftInfo &nodeInfo = m_cfgSelf.m_aNodes[nNode];
-                if (m_cfgSelf.m_nRaftID != nodeInfo.m_nNodeId)
+                const CRaftInfo &nodeInfo = pConfig->m_aNodes[nNode];
+                if (pConfig->m_nRaftID != nodeInfo.m_nNodeId)
                 {
                     CEventSession * pSession = m_pIoBase->Connect(nodeInfo.m_strHost, nodeInfo.m_nPeerPort,nodeInfo.m_nNodeId);
                     if (NULL != pSession)
@@ -166,8 +140,8 @@ int CRaftServer::Start(void)
 void CRaftServer::NotifyStop(void)
 {
     CListenEventBase::NotifyStop();
-    m_pMsgQueue->Push(NULL);
-    m_pIoQueue->Push(NULL);
+    m_pRaftFrame->GetMsgQueue()->Push(NULL);
+    m_pRaftFrame->GetIoQueue()->Push(NULL);
 }
 
 void CRaftServer::Stop(void)
@@ -189,9 +163,9 @@ void CRaftServer::Stop(void)
 
 CIoEventBase* CRaftServer::CreateIoBase(void)
 {
-    CRaftIoBase *pIoBase = new CRaftIoBase();
-    pIoBase->SetSessionRange(1000, 11000);
-    pIoBase->SetMsgQueue(m_pMsgQueue);
+    CRaftIoBase *pIoBase = new CRaftIoBase(&m_seqIDs);
+    pIoBase->SetMsgQueue(m_pRaftFrame->GetMsgQueue());
+    pIoBase->SetSerializer(m_pRaftFrame->GetSerializer());
     return pIoBase;
 }
 
@@ -208,8 +182,10 @@ void CRaftServer::TimerShell(evutil_socket_t tTimer, short nEvents, void *pData)
 
 void CRaftServer::TimerFunc(evutil_socket_t tSignal, short nEvents)
 {
-    if (NULL != m_pRaftNode)
-        m_pRaftNode->OnTick();
+    CRaftConfig *pConfig = m_pRaftFrame->GetRaftConfig();
+    CRaft * pRaft = m_pRaftFrame->GetRaft();
+    if (NULL != pRaft)
+        pRaft->OnTick();
     m_nTryTicks --;
     if (0 == m_nTryTicks)
     {
@@ -218,20 +194,20 @@ void CRaftServer::TimerFunc(evutil_socket_t tSignal, short nEvents)
         for (auto iter = m_mapNodes.begin(); iter != m_mapNodes.end(); ++iter)
         {
             CRaftSession *pSession = (CRaftSession*)iter->second;
-            if (m_cfgSelf.m_nRaftID != iter->first)
+            if (pConfig->m_nRaftID != iter->first)
             {
                 if (!pSession->IsConnected())
                 {
                     int nConnect = pSession->RetryConnect();
-                    m_pLogger->Infof(__FILE__, __LINE__, "Reconnect %d %d", iter->first, nConnect);
+                    m_pRaftFrame->GetLogger()->Infof(__FILE__, __LINE__, "Reconnect %d %d", iter->first, nConnect);
                 }
             }
         }
     }
 
     struct timeval tv;
-    tv.tv_sec = m_cfgSelf.m_nMsPerTick / 1000;
-    tv.tv_usec = (m_cfgSelf.m_nMsPerTick % 1000) * 1000;
+    tv.tv_sec = pConfig->m_nMsPerTick / 1000;
+    tv.tv_usec = (pConfig->m_nMsPerTick % 1000) * 1000;
     evtimer_add(m_pTimerEvent, &tv);
 }
 
@@ -294,16 +270,17 @@ void CRaftServer::KvIoShell(void *pContext)
 
 void CRaftServer::KvIoFunc(void)
 {
-    if (NULL != m_pIoQueue)
+    CRaftQueue * pIoQueue = m_pRaftFrame->GetIoQueue();
+    if (NULL != pIoQueue)
     {
         int nErrorNo = OK;
-        CLogOperation *pLogOperation = static_cast<CLogOperation*> (m_pIoQueue->Pop());
+        CLogOperation *pLogOperation = static_cast<CLogOperation*> (pIoQueue->Pop());
         while ((NULL != pLogOperation) && (2 == m_nIoState) && SUCCESS(nErrorNo))
         {
             nErrorNo = DoLogopt(pLogOperation);
             delete pLogOperation;
             if (SUCCESS(nErrorNo))
-                pLogOperation = static_cast<CLogOperation*> (m_pIoQueue->Pop());
+                pLogOperation = static_cast<CLogOperation*> (pIoQueue->Pop());
         }
         DiscardIoTask();
     }
@@ -312,63 +289,70 @@ void CRaftServer::KvIoFunc(void)
 int CRaftServer::DoLogopt(CLogOperation * pLogOperation)
 {
     int nErrorNo = OK;
-    if ((0 == pLogOperation->m_nType || 1 == pLogOperation->m_nType) && pLogOperation->m_pOperation != NULL)
+    CRaftProtoBufferSerializer *pSerializer = dynamic_cast<CRaftProtoBufferSerializer *>(m_pRaftFrame->GetSerializer());
+    CRaftLog * pRaftLog = m_pRaftFrame->GetRaftLog();
+    CKvService *pKvService = m_pRaftFrame->GetKvService();
+    if ((0 == pLogOperation->m_nType || 1 == pLogOperation->m_nType) 
+        && pLogOperation->m_pOperation != NULL)
     {
         CReadState *pIoReady = pLogOperation->m_pOperation;
-        RequestOp *pRequest = new RequestOp();
-        pRequest->ParseFromString(pIoReady->m_strRequestCtx);
+        CRequestOp *pRequest = new CRequestOp();
+        pSerializer->ParseRequestOp(*pRequest, pIoReady->m_strRequestCtx);
         uint32_t nClientID = pRequest->clientid();
         uint32_t nSubSessionID = pRequest->subsessionid();
-        RequestOp::RequestCase typeRequest = pRequest->request_case();
+        CRequestOp::RequestCase typeRequest = pRequest->request_case();
 
-        ResponseOp *pResponse = new ResponseOp();
+        CResponseOp *pResponse = new CResponseOp();
         pResponse->set_subsessionid(nSubSessionID);
-        if (typeRequest == RequestOp::kRequestRange)
+        if (typeRequest == CRequestOp::kRequestRange)
         {
-            RangeRequest * pRangeRequest = pRequest->mutable_request_range();
-            string strKey = pRangeRequest->key();
+            const CRangeRequest &rangeRequest = pRequest->request_range();
+            const string strKey = rangeRequest.key();
             string strValue;
-            int nGet = m_pKvService->Get(strKey, strValue);
-            RangeResponse* pRangeResonse = pResponse->mutable_response_range();
+            int nGet = pKvService->Get(strKey, strValue);
+            CRangeResponse* pRangeResonse = pResponse->mutable_response_range();
             pResponse->set_errorno(nGet);
             if (0 == nGet)
             {
-                raftserverpb::KeyValue* pKeyValue = pRangeResonse->add_kvs();
+                CKeyValue* pKeyValue = pRangeResonse->add_kvs();
                 pKeyValue->set_key(strKey);
                 pKeyValue->set_value(strValue);
             }
         }
-        else if (typeRequest == RequestOp::kRequestPut)
+        else if (typeRequest == CRequestOp::kRequestPut)
         {
-            const PutRequest &requestPut = pRequest->request_put();
-            int nPut = m_pKvService->Put(requestPut.key(), requestPut.value());
+            const CPutRequest &requestPut = pRequest->request_put();
+            int nPut = pKvService->Put(requestPut.key(), requestPut.value());
             if (0 == nPut)
             {
-                m_pRaftLog->AppliedTo(pIoReady->m_u64Index);
-                m_pLogger->Infof(__FILE__, __LINE__, "put opt apply log to %llu node", pIoReady->m_u64Index);
+                pRaftLog->AppliedTo(pIoReady->m_u64Index);
+                m_pRaftFrame->GetLogger()->Infof(__FILE__, __LINE__, "put opt apply log to %llu node", pIoReady->m_u64Index);
             }
             pResponse->set_errorno(nPut);
-            PutResponse *pPutResponse = pResponse->mutable_response_put();
+            CPutResponse *pPutResponse = pResponse->mutable_response_put();
         }
-        else if (typeRequest == RequestOp::kRequestDeleteRange)
+        else if (typeRequest == CRequestOp::kRequestDeleteRange)
         {
-            const DeleteRangeRequest &requestDel = pRequest->request_delete_range();
-            int nDelete = m_pKvService->Delete(requestDel.key());
+            const CDeleteRangeRequest &requestDel = pRequest->request_delete_range();
+            int nDelete = pKvService->Delete(requestDel.key());
             if (0 == nDelete)
             {
-                m_pRaftLog->AppliedTo(pIoReady->m_u64Index);
-                m_pLogger->Infof(__FILE__, __LINE__, "delete opt apply log to %llu node", pIoReady->m_u64Index);
+                m_pRaftFrame->GetRaftLog()->AppliedTo(pIoReady->m_u64Index);
+                m_pRaftFrame->GetLogger()->Infof(__FILE__, __LINE__, "delete opt apply log to %llu node", pIoReady->m_u64Index);
             }
             pResponse->set_errorno(nDelete);
-            DeleteRangeResponse* pDelResponse = pResponse->mutable_response_delete_range();
+            CDeleteRangeResponse* pDelResponse = pResponse->mutable_response_delete_range();
         }
         if (NULL != pResponse)
         {
-            bool bSent = TrySendRaftMsg(nClientID, pResponse);
+            std::string strMsg;
+            CRaftProtoBufferSerializer *pSerializer = dynamic_cast<CRaftProtoBufferSerializer*>(m_pRaftFrame->GetSerializer());
+            pSerializer->SerializeResponseOp(*pResponse, strMsg);
+            bool bSent = TrySendRaftMsg(nClientID, strMsg);
             if (bSent)
-                m_pLogger->Infof(__FILE__, __LINE__, "send io message to %d node", nClientID);
+                m_pRaftFrame->GetLogger()->Infof(__FILE__, __LINE__, "send io message to %d node", nClientID);
             else
-                m_pLogger->Infof(__FILE__, __LINE__, "discard message when not found node");
+                m_pRaftFrame->GetLogger()->Infof(__FILE__, __LINE__, "discard message when not found node");
             delete pResponse;
         }
     }
@@ -376,27 +360,27 @@ int CRaftServer::DoLogopt(CLogOperation * pLogOperation)
     {
         uint64_t u64MaxSize = 1024 * 1024;
         EntryVec entries;
-        uint64_t u64Apply = m_pRaftLog->GetApplied() + 1;
+        uint64_t u64Apply = pRaftLog->GetApplied() + 1;
         for (; u64Apply <= pLogOperation->m_u64ApplyTo; u64Apply++)
         {
-            nErrorNo = m_pRaftLog->GetSliceEntries(u64Apply, u64Apply + 1, u64MaxSize, entries);
+            nErrorNo = pRaftLog->GetSliceEntries(u64Apply, u64Apply + 1, u64MaxSize, entries);
             if (SUCCESS(nErrorNo))
             {
                 const std::string &strRequestCtx = entries[0].data();
                 if (!strRequestCtx.empty())
                 {
-                    RequestOp *pRequest = new RequestOp();
-                    pRequest->ParseFromString(strRequestCtx);
-                    RequestOp::RequestCase typeRequest = pRequest->request_case();
-                    if (typeRequest == RequestOp::kRequestPut)
+                    CRequestOp *pRequest = new CRequestOp();
+                    pSerializer->ParseRequestOp(*pRequest, strRequestCtx);
+                    CRequestOp::RequestCase typeRequest = pRequest->request_case();
+                    if (typeRequest == CRequestOp::kRequestPut)
                     {
-                        const PutRequest &requestPut = pRequest->request_put();
-                        int nPut = m_pKvService->Put(requestPut.key(), requestPut.value());
+                        const CPutRequest &requestPut = pRequest->request_put();
+                        int nPut = pKvService->Put(requestPut.key(), requestPut.value());
                     }
-                    else if (typeRequest == RequestOp::kRequestDeleteRange)
+                    else if (typeRequest == CRequestOp::kRequestDeleteRange)
                     {
-                        const DeleteRangeRequest &requestDel = pRequest->request_delete_range();
-                        int nDelete = m_pKvService->Delete(requestDel.key());
+                        const CDeleteRangeRequest &requestDel = pRequest->request_delete_range();
+                        int nDelete = pKvService->Delete(requestDel.key());
                     }
                     delete pRequest;
                 }
@@ -406,8 +390,8 @@ int CRaftServer::DoLogopt(CLogOperation * pLogOperation)
         }
         if (SUCCESS(nErrorNo))
         {
-            m_pRaftLog->AppliedTo(pLogOperation->m_u64ApplyTo);
-            m_pLogger->Infof(__FILE__, __LINE__, "apply log to %llu node", pLogOperation->m_u64ApplyTo);
+            pRaftLog->AppliedTo(pLogOperation->m_u64ApplyTo);
+            m_pRaftFrame->GetLogger()->Infof(__FILE__, __LINE__, "apply log to %llu node", pLogOperation->m_u64ApplyTo);
         }
     }
     return nErrorNo;
@@ -421,31 +405,36 @@ void CRaftServer::SendMsgShell(void *pContext)
 
 void CRaftServer::SendMsgFunc(void)
 {
-    if (NULL != m_pMsgQueue)
+    CRaftQueue * pMsgQueue = m_pRaftFrame->GetMsgQueue();
+    CRaftConfig *pConfig = m_pRaftFrame->GetRaftConfig();
+    CRaft *pRaft = m_pRaftFrame->GetRaft();
+    if (NULL != pMsgQueue)
     {
-        Message *pMsg = static_cast<Message*> (m_pMsgQueue->Pop());
+        CMessage *pMsg = static_cast<CMessage*> (pMsgQueue->Pop());
         while ((NULL != pMsg) && (2 == m_nIoState))
         {
             uint32_t uRaftID = pMsg->to();
-            if (m_cfgSelf.m_nRaftID == uRaftID || 0 == uRaftID)
-                m_pRaftNode->Step(*pMsg);
+            if (pConfig->m_nRaftID == uRaftID || 0 == uRaftID)
+                pRaft->Step(*pMsg);
             else
             {
-                bool bSent = TrySendRaftMsg(uRaftID,pMsg);
+                std::string strMsg;
+                m_pRaftFrame->GetSerializer()->SerializeMessage(*pMsg, strMsg);
+                bool bSent = TrySendRaftMsg(uRaftID, strMsg);
                 if (bSent)
-                    m_pLogger->Debugf(__FILE__, __LINE__, "send message :From %d  to %d type %s",
+                    m_pRaftFrame->GetLogger()->Debugf(__FILE__, __LINE__, "send message :From %d  to %d type %s",
                         pMsg->from(), pMsg->to(), CRaftUtil::MsgType2String(pMsg->type()));
                 else
-                    m_pLogger->Infof(__FILE__, __LINE__, "discard message when not found node");
+                    m_pRaftFrame->GetLogger()->Infof(__FILE__, __LINE__, "discard message when not found node");
             }
             delete pMsg;
-            pMsg = static_cast<Message *>(m_pMsgQueue->Pop());
+            pMsg = static_cast<CMessage *>(pMsgQueue->Pop());
         }
         DiscardMessages();
     }
 }
 
-bool CRaftServer::TrySendRaftMsg(uint32_t uRaftID, google::protobuf::MessageLite * pMsg)
+bool CRaftServer::TrySendRaftMsg(uint32_t uRaftID, std::string &strMsg)
 {
     bool bSent = false;
     std::lock_guard<std::mutex> guardSession(m_mutexSession);
@@ -454,7 +443,6 @@ bool CRaftServer::TrySendRaftMsg(uint32_t uRaftID, google::protobuf::MessageLite
         CRaftSession *pSession = (CRaftSession*)m_mapNodes[uRaftID];
         if (pSession->IsConnected())
         {
-            std::string strMsg = pMsg->SerializeAsString();
             int nSend = pSession->SendMsg(strMsg);
             bSent = true;
         }
@@ -462,7 +450,8 @@ bool CRaftServer::TrySendRaftMsg(uint32_t uRaftID, google::protobuf::MessageLite
     else
     {
         CRaftIoBase *pIoBase = dynamic_cast<CRaftIoBase *>(m_pIoBase);
-        bSent = pIoBase->TrySendRaftMsg(uRaftID, pMsg);
+        int nSend = pIoBase->TrySendRaftMsg(uRaftID, strMsg);
+        bSent = (0 == nSend);
     }
     return bSent;
 }
@@ -470,25 +459,27 @@ bool CRaftServer::TrySendRaftMsg(uint32_t uRaftID, google::protobuf::MessageLite
 void CRaftServer::DiscardIoTask(void)
 {
     int nMsgCount = 0;
-    CReadState* pMsg = static_cast<CReadState*> (m_pIoQueue->Pop(0));
+    CRaftQueue * pIoQueue = m_pRaftFrame->GetIoQueue();
+    CReadState* pMsg = static_cast<CReadState*> (pIoQueue->Pop(0));
     while (NULL != pMsg)
     {
         nMsgCount++;
         delete pMsg;
-        pMsg = static_cast<CReadState*> (m_pIoQueue->Pop(0));
+        pMsg = static_cast<CReadState*> (pIoQueue->Pop(0));
     }
-    m_pLogger->Infof(__FILE__, __LINE__, "discard %d io task when stopping", nMsgCount);
+    m_pRaftFrame->GetLogger()->Infof(__FILE__, __LINE__, "discard %d io task when stopping", nMsgCount);
 }
 
 void CRaftServer::DiscardMessages(void)
 {
+    CRaftQueue *pMsgQueue = m_pRaftFrame->GetMsgQueue();
     int nMsgCount = 0;
-    google::protobuf::MessageLite *pMsg = static_cast<google::protobuf::MessageLite *>(m_pMsgQueue->Pop(0));
+    CMessage *pMsg = static_cast<CMessage *>(pMsgQueue->Pop(0));
     while (NULL != pMsg)
     {
         nMsgCount++;
         delete pMsg;
-        pMsg = static_cast<google::protobuf::MessageLite *>(m_pMsgQueue->Pop(0));
+        pMsg = static_cast<CMessage *>(pMsgQueue->Pop(0));
     }
-    m_pLogger->Infof(__FILE__, __LINE__, "discard %d messages when stopping", nMsgCount);               
+    m_pRaftFrame->GetLogger()->Infof(__FILE__, __LINE__, "discard %d messages when stopping", nMsgCount);               
 }

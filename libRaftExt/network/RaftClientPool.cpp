@@ -1,6 +1,6 @@
 #include "stdafx.h"
-#include "raft.pb.h"
-#include "rpc.pb.h"
+#include "protobuffer/raft.pb.h"
+#include "protobuffer/rpc.pb.h"
 using namespace raftserverpb;
 
 #include <signal.h>
@@ -10,11 +10,10 @@ using namespace raftserverpb;
 #include "RaftQueue.h"
 #include "RaftClientSession.h"
 #include "Log4CxxLogger.h"
-
-
 #include "RaftDef.h"
 
-CRaftClientPool::CRaftClientPool()
+CRaftClientPool::CRaftClientPool(CSequenceID *pSessionSeqID)
+    :CRaftIoBase(pSessionSeqID)
 {
     m_pSignalEvent = NULL;
     m_pTimerEvent = NULL;
@@ -340,9 +339,8 @@ bool CRaftClientPool::Wake(raftserverpb::ResponseOp *pResponse)
 
 CEventSession *CRaftClientPool::CreateClientSession(struct bufferevent *pBufferEvent, const std::string &strHost, int nPort, uint32_t nSessionID)
 {
-    CRaftClientSession *pSession = new CRaftClientSession(this, pBufferEvent, strHost, nPort);
+    CRaftClientSession *pSession = new CRaftClientSession(this, pBufferEvent, strHost, nPort, nSessionID);
     pSession->SetPool(this);
-    pSession->SetSessionID(nSessionID);
     pSession->SetMsgQueue(m_pMsgQueue);
     std::lock_guard<std::mutex> guardSession(m_mutexSession);
     m_mapSession[nSessionID] = pSession;

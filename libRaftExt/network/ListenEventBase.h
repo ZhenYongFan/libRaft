@@ -1,12 +1,12 @@
 #pragma once
-#include "libRaftCore.h"
+#include "libRaftExt.h"
 #include "EventBase.h"
 #include "SequenceID.h"
 
 class CIoEventBase;
 class CEventSession;
 
-class LIBRAFTCORE_API CListenEventBase :public CEventBase
+class LIBRAFTEXT_API CListenEventBase :public CEventBase
 {
 public:
     CListenEventBase();

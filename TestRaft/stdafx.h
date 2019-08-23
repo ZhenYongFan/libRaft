@@ -53,4 +53,21 @@
 #  define NOMINMAX
 #endif
 
+//stl
+#include <string>
 #include <vector>
+#include <map>
+#include <list>
+#include <algorithm>
+
+//cxx11
+#include <unordered_map>
+#include <unordered_set>
+#include <thread>
+#include <mutex>
+
+//libevent
+#include <event2/event.h>
+#include <event2/thread.h>
+#include <event2/bufferevent.h>
+#include <event2/listener.h>

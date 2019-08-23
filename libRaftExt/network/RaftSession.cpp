@@ -1,16 +1,15 @@
 #include "stdafx.h"
-#include "raft.pb.h"
-#include "rpc.pb.h"
-using namespace raftpb;
-using namespace raftserverpb;
-
 #include "RaftSession.h"
 #include "RaftIoBase.h"
+#include "RaftEntry.h"
 #include <event2/util.h>
 #include <event2/buffer.h>
 #include <string.h>
 
+#include "RequestOp.h"
 #include "RaftQueue.h"
+#include "protobuffer/RaftProtoBufferSerializer.h"
+#include "RequestOp.h"
 
 CRaftSession::CRaftSession(CIoEventBase *pIoBase, struct bufferevent *pBufferEvent, uint32_t nSessionID)
     :CEventSession(pIoBase,pBufferEvent, nSessionID)
@@ -202,10 +201,12 @@ bool CRaftSession::ReadCtx(struct evbuffer * pInput)
 bool CRaftSession::PushMessage(std::string &strMsgData)
 {
     bool bPush = false;
+    CRaftIoBase *pRaftBase = dynamic_cast<CRaftIoBase *>(GetIoBase());
+    CRaftProtoBufferSerializer *pSerializer = dynamic_cast<CRaftProtoBufferSerializer *>(pRaftBase->GetSerializer());
     if (0 == m_nTypeID)
     {
-        Message *pMsg = new Message();
-        if (pMsg->ParseFromString(strMsgData))
+        CMessage *pMsg = new CMessage();
+        if (pSerializer->ParseMessage(*pMsg, strMsgData))
         {
             m_pMsgQueue->Push(pMsg);
             bPush = true;
@@ -215,26 +216,26 @@ bool CRaftSession::PushMessage(std::string &strMsgData)
     }
     else if(1 == m_nTypeID)
     {
-        RequestOp *pRequest = new RequestOp();
-        if (pRequest->ParseFromString(strMsgData))
+        CRequestOp *pRequest = new CRequestOp();
+        if (pSerializer->ParseRequestOp(*pRequest,strMsgData))
         {
             pRequest->set_clientid(m_nSessionID);
-            RequestOp::RequestCase typeRequest = pRequest->request_case();
-            raftpb::MessageType typeMsg = MessageType_INT_MAX_SENTINEL_DO_NOT_USE_;
-            if (typeRequest == RequestOp::kRequestPut || typeRequest == RequestOp::kRequestDeleteRange)
-                typeMsg = MsgProp;
-            else if (typeRequest == RequestOp::kRequestRange)
-                typeMsg = MsgReadIndex;
-            pRequest->SerializeToString(&strMsgData);
+            CRequestOp::RequestCase typeRequest = pRequest->request_case();
+            CMessage::EMessageType typeMsg = CMessage::MsgNoUsed;
+            if (typeRequest == CRequestOp::kRequestPut || typeRequest == CRequestOp::kRequestDeleteRange)
+                typeMsg = CMessage::MsgProp;
+            else if (typeRequest == CRequestOp::kRequestRange)
+                typeMsg = CMessage::MsgReadIndex;
+            pSerializer->SerializeRequestOp(*pRequest, strMsgData);
 
-            Message *pMsg = new Message();
+            CMessage *pMsg = new CMessage();
             pMsg->set_to(0);
             pMsg->set_from(0);
             pMsg->set_term(0);
             pMsg->set_logterm(0);
             pMsg->set_index(0);
             pMsg->set_type(typeMsg);
-            Entry *pEntry = pMsg->add_entries();
+            CRaftEntry *pEntry = pMsg->add_entries();
             pEntry->set_data(strMsgData);
             m_pMsgQueue->Push(pMsg);
             bPush = true;

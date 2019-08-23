@@ -2,13 +2,14 @@
 #include "RaftIoBase.h"
 #include "RaftSession.h"
 #include "RaftQueue.h"
-#include "rpc.pb.h"
+#include "RaftSerializer.h"
 #include "SequenceID.h"
 
 CRaftIoBase::CRaftIoBase(CSequenceID *pSessionSeqID)
     :CIoEventBase(pSessionSeqID)
 {
     m_pMsgQueue = NULL;
+    m_pSerializer = NULL;
 }
 
 CRaftIoBase::~CRaftIoBase()
@@ -20,21 +21,24 @@ void CRaftIoBase::SetMsgQueue(CRaftQueue *pQueue)
     m_pMsgQueue = pQueue;
 }
 
-bool CRaftIoBase::TrySendRaftMsg(uint32_t nSessionID, google::protobuf::MessageLite * pMsg)
+int CRaftIoBase::TrySendRaftMsg(uint32_t nSessionID, std::string &strMsg)
 {
-    bool bSent = false;
+    int nSend = 0;
     std::lock_guard<std::mutex> guardSession(m_mutexSession);
     if (m_mapSession.find(nSessionID) != m_mapSession.end())
     {
         CRaftSession *pSession = dynamic_cast<CRaftSession *>(m_mapSession[nSessionID]);
         if (pSession->IsConnected())
         {
-            std::string strMsg = pMsg->SerializeAsString();
-            if(0 == pSession->SendMsg(strMsg))
-                bSent = true;
+            if (0 != pSession->SendMsg(strMsg))
+                nSend = 3;
         }
+        else
+            nSend = 2;
     }
-    return bSent;
+    else
+        nSend = 1;
+    return nSend;
 }
 
 CEventSession *CRaftIoBase::CreateClientSession(struct bufferevent *pBufferEvent, const std::string &strHost, int nPort, uint32_t nSessionID)

@@ -1,5 +1,5 @@
 #pragma once
-#include "libRaftCore.h"
+#include "libRaftExt.h"
 
 #include "RaftIoBase.h"
 #include "RaftConfig.h"
@@ -18,10 +18,10 @@ namespace raftserverpb
     class RequestOp;
 };
 
-class LIBRAFTCORE_API CRaftClientPool:public CRaftIoBase
+class LIBRAFTEXT_API CRaftClientPool:public CRaftIoBase
 {
 public:
-    CRaftClientPool(void);
+    CRaftClientPool(CSequenceID *pSessionSeqID);
 
     virtual ~CRaftClientPool(void);
 

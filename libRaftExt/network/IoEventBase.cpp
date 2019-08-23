@@ -61,16 +61,14 @@ CEventSession *CIoEventBase::CreateClientSession(struct bufferevent *pBufferEven
 CEventSession *CIoEventBase::CreateServiceSession(struct bufferevent *pBufferEvent)
 {
     CEventSession *pSession = NULL;
-    std::lock_guard<std::mutex> guardSession(m_mutexSession);
     uint32_t nSessionID;
     bool bCreate = m_pSessionSeqID->AllocSeqID(nSessionID);
     if (bCreate)
     {
-        if (m_mapSession.find(nSessionID) == m_mapSession.end())
-        {
-            pSession = new CEventSession(this, pBufferEvent, nSessionID);
-            m_mapSession[nSessionID] = pSession;
-        }
+        std::lock_guard<std::mutex> guardSession(m_mutexSession);
+        assert(m_mapSession.find(nSessionID) == m_mapSession.end());
+        pSession = new CEventSession(this, pBufferEvent, nSessionID);
+        m_mapSession[nSessionID] = pSession;
     }
     return pSession;
 }
@@ -88,8 +86,8 @@ bool CIoEventBase::DestroySession(CEventSession *pSession)
         m_mapSession.erase(itFound);
         if (!pSession->IsClient())
             m_pSessionSeqID->FreeSeqID(nSessionID);
-        bDestroy = true;
         delete pSession;
+        bDestroy = true;
     }
     return bDestroy;
 }

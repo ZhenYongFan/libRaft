@@ -1,10 +1,10 @@
 #pragma once
-#include "libRaftCore.h"
+#include "libRaftExt.h"
 
 class CIoEventBase;
 
 ///\brief 通过libevent建立的会话，每个Session有一个唯一ID
-class LIBRAFTCORE_API CEventSession
+class LIBRAFTEXT_API CEventSession
 {
 public:
     ///\brief 会话当前状态
