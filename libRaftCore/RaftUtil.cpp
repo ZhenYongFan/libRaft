@@ -8,10 +8,6 @@
 
 using namespace std;
 
-const char* GetErrorString(int err) {
-  return "";
-}
-
 bool isDeepEqualSnapshot(const CSnapshot *s1, const CSnapshot *s2) {
   if (s1 == NULL || s2 == NULL) {
     return false;
@@ -195,6 +191,29 @@ CMessage::EMessageType VoteRespMsgType(CMessage::EMessageType typeMsg)
         return CMessage::MsgPreVoteResp;
 }
 
+void copyEntries(const CMessage& msg, EntryVec &entries)
+{
+    for (int i = 0; i < msg.entries_size(); ++i)
+        entries.push_back(*msg.entries(i));
+}
+
+const char *pstrErrorString[] = {
+    "OK",
+    "Compacted",
+    "ErrSnapOutOfDate",
+    "ErrUnavailable",
+    "ErrSnapshotTemporarilyUnavailable",
+    "ErrSeriaFail"
+};
+
+const char* CRaftErrNo::GetErrorString(int nErrNo)
+{
+    const char* pstrErrMsg = "";
+    if (nErrNo >= 0 && nErrNo <= int(CRaftErrNo::eErrSeriaFail))
+        pstrErrMsg = pstrErrorString[nErrNo];
+    return pstrErrMsg;
+}
+
 const char *pstrTypeString[] = {
     "MsgHup",
     "MsgBeat",
@@ -216,12 +235,6 @@ const char *pstrTypeString[] = {
     "MsgPreVote",
     "MsgPreVoteResp"
 };
-
-void copyEntries(const CMessage& msg, EntryVec &entries)
-{
-    for (int i = 0; i < msg.entries_size(); ++i)
-        entries.push_back(*msg.entries(i));
-}
 
 const char* CRaftUtil::MsgType2String(int typeMsg)
 {
@@ -266,12 +279,12 @@ CRaftMemLog* newLog(CRaftStorage *pStorage, CLogger *pLogger)
 
     uint64_t u64FirstIndex, u64LastIndex;
     int nErrorNo = pStorage->FirstIndex(u64FirstIndex);
-    if (!SUCCESS(nErrorNo))
-        pLogger->Fatalf(__FILE__, __LINE__, "get first index err:%s", GetErrorString(nErrorNo));
+    if (!CRaftErrNo::Success(nErrorNo))
+        pLogger->Fatalf(__FILE__, __LINE__, "get first index err:%s", CRaftErrNo::GetErrorString(nErrorNo));
 
     nErrorNo = pStorage->LastIndex(u64LastIndex);
-    if (!SUCCESS(nErrorNo))
-        pLogger->Fatalf(__FILE__, __LINE__, "get last index err:%s", GetErrorString(nErrorNo));
+    if (!CRaftErrNo::Success(nErrorNo))
+        pLogger->Fatalf(__FILE__, __LINE__, "get last index err:%s", CRaftErrNo::GetErrorString(nErrorNo));
 
     pRaftLog->m_unstablePart.m_u64Offset = u64LastIndex + 1;
     pRaftLog->m_unstablePart.m_pLogger = pLogger;

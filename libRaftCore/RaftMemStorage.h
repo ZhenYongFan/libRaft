@@ -47,6 +47,11 @@ public:
     ///\return 成功标志 OK 成功；其他失败
     virtual int Term(uint64_t u64Index, uint64_t &u64Term);
 
+    ///\brief 按索引号范围（闭区间），在满足空间限制的前提下读取一组日志
+    ///\param u64Low 起始索引号
+    ///\param u64High 终止索引号
+    ///\param u64MaxSize 日志占用内存大小
+    ///\param vecEntries 返回的日志数组
     ///\attention 如果u64MaxSize ==0则返回第一条符合条件的日志
     virtual int Entries(uint64_t u64Low, uint64_t u64High, uint64_t u64MaxSize, vector<CRaftEntry> &entries);
     
@@ -70,7 +75,7 @@ public:
     // ents[i] has raft log position i+snapshot.Metadata.Index
     EntryVec entries_;
 
-    std::mutex m_mutexStorage;         ///< 多线程保护
-    CLogger *m_pLogger;
+    std::mutex m_mutexStorage; ///< 多线程保护
+    CLogger *m_pLogger;        ///< 日志输出器
 };
 

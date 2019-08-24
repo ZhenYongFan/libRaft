@@ -88,10 +88,10 @@ bool CRaftFrame::InitRaftLog(std::string &strErrMsg)
 
     uint64_t firstIndex, lastIndex;
     int nErrorNo = m_pRaftStorage->FirstIndex(firstIndex);
-    if (SUCCESS(nErrorNo))
+    if (CRaftErrNo::Success(nErrorNo))
     {
         nErrorNo = m_pRaftStorage->LastIndex(lastIndex);
-        if (SUCCESS(nErrorNo))
+        if (CRaftErrNo::Success(nErrorNo))
         {
             pRaftLog->m_unstablePart.m_u64Offset = lastIndex + 1;
             pRaftLog->m_unstablePart.m_pLogger = m_pLogger;
@@ -99,10 +99,10 @@ bool CRaftFrame::InitRaftLog(std::string &strErrMsg)
             bInit = true;
         }
         else
-            m_pLogger->Fatalf(__FILE__, __LINE__, "get last index err:%s", GetErrorString(nErrorNo));
+            m_pLogger->Fatalf(__FILE__, __LINE__, "get last index err:%s", CRaftErrNo::GetErrorString(nErrorNo));
     }
     else
-        m_pLogger->Fatalf(__FILE__, __LINE__, "get first index err:%s", GetErrorString(nErrorNo));
+        m_pLogger->Fatalf(__FILE__, __LINE__, "get first index err:%s", CRaftErrNo::GetErrorString(nErrorNo));
     return bInit;
 }
 

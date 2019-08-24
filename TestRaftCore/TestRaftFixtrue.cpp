@@ -718,7 +718,7 @@ void testVoteFromAnyState(CMessage::EMessageType vt)
         msg.set_index(42);
         int err = r->Step(msg);
 
-        CPPUNIT_ASSERT(err == OK);
+        CPPUNIT_ASSERT(err == CRaftErrNo::eOK);
         vector<CMessage*> msgs;
         pFrame->ReadMessages(msgs);
         CPPUNIT_ASSERT(msgs.size() == 1);
@@ -4639,7 +4639,7 @@ void CTestRaftFixtrue::TestStepIgnoreConfig(void)
     CRaftMemLog *pMemLog = dynamic_cast<CRaftMemLog*> (r->m_pRaftLog);
     int err = pMemLog->GetEntries(index + 1, noLimit, ents);
 
-    CPPUNIT_ASSERT(err == OK);
+    CPPUNIT_ASSERT(err == CRaftErrNo::eOK);
     CPPUNIT_ASSERT(isDeepEqualEntries(wents, ents));
     CPPUNIT_ASSERT_EQUAL(r->m_bPendingConf, pendingConf);
     pFrame->Uninit();

@@ -58,11 +58,14 @@ public:
     void Slice(uint64_t u64Low, uint64_t u64High, EntryVec &vecEntries);
 protected:
     ///\brief 断言索引号范围的正确性
+    ///\param u64Low 起始索引号
+    ///\param u64High 终止索引号
+    ///\attention 要求u64Low 小于u64High，u64Low大于等于m_u64Offset并且u64High小于等于上限
     void AssertCheckOutOfBounds(uint64_t u64Low, uint64_t u64High);
-public:
 
+public:
     CSnapshot* m_pSnapshot; ///< 快照
-    EntryVec m_vecEntries; ///< 写入内存但未持久化的日志
-    uint64_t m_u64Offset;  ///< 第一个日志记录的索引号偏移
-    CLogger *m_pLogger;    ///< 输出日志
+    EntryVec m_vecEntries;  ///< 写入内存但未持久化的日志
+    uint64_t m_u64Offset;   ///< 第一个日志记录的索引号偏移
+    CLogger *m_pLogger;     ///< 输出日志
 };

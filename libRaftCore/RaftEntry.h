@@ -12,16 +12,16 @@ public:
         eConfChange = 1  ///< 组员变化日志
     };
 public:
+    ///\brief 构造函数
     CRaftEntry(void);
 
-    CRaftEntry(const CRaftEntry & entry);
-
-    CRaftEntry& operator =(const CRaftEntry& str);
-
+    ///\brief 析构函数
     ~CRaftEntry(void);
 
+    ///\brief 对象复制
     void Copy(const CRaftEntry & entry);
 
+    ///\brief 一组Get、Set函数
     inline uint64_t term(void) const
     {
         return m_u64Term;
@@ -36,6 +36,7 @@ public:
     {
         return m_u64Index;
     }
+
     inline void set_index(uint64_t u64Index)
     {
         m_u64Index = u64Index;

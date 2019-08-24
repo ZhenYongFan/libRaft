@@ -107,8 +107,8 @@ uint64_t CRaftMemLog::GetLastTerm(void)
 {
     uint64_t u64Term;
     int nErrorNo = GetTerm(GetLastIndex(), u64Term);
-    if (!SUCCESS(nErrorNo))
-        m_pLogger->Fatalf(__FILE__, __LINE__, "unexpected error when getting the last term (%s)", GetErrorString(nErrorNo));
+    if (!CRaftErrNo::Success(nErrorNo))
+        m_pLogger->Fatalf(__FILE__, __LINE__, "unexpected error when getting the last term (%s)", CRaftErrNo::GetErrorString(nErrorNo));
     return u64Term;
 }
 
@@ -119,7 +119,7 @@ int CRaftMemLog::GetEntries(uint64_t u64Index, uint64_t maxSize, EntryVec &entri
 
     if (u64Index > u64LastIndex)
     {
-        return OK;
+        return CRaftErrNo::eOK;
     }
 
     return GetSliceEntries(u64Index, u64LastIndex + 1, maxSize, entries);
@@ -129,17 +129,17 @@ int CRaftMemLog::GetEntries(uint64_t u64Index, uint64_t maxSize, EntryVec &entri
 void CRaftMemLog::allEntries(EntryVec &entries)
 {
     int nErrorNo = GetEntries(GetFirstIndex(), noLimit, entries);
-    if (SUCCESS(nErrorNo))
+    if (CRaftErrNo::Success(nErrorNo))
     {
         return;
     }
 
-    if (nErrorNo == ErrCompacted) // try again if there was a racing compaction 
+    if (nErrorNo == CRaftErrNo::ErrCompacted) // try again if there was a racing compaction 
     {
         return allEntries(entries);
     }
     // TODO (xiangli): handle error? 
-    m_pLogger->Fatalf(__FILE__, __LINE__, "allEntries fatal: %s", GetErrorString(nErrorNo));
+    m_pLogger->Fatalf(__FILE__, __LINE__, "allEntries fatal: %s", CRaftErrNo::GetErrorString(nErrorNo));
 }
 
 bool CRaftMemLog::IsUpToDate(uint64_t u64Index, uint64_t u64Term)
@@ -238,9 +238,9 @@ void CRaftMemLog::nextEntries(EntryVec& entries)
     if (m_pStorage->m_u64Committed + 1 > offset)
     {
         int err = GetSliceEntries(offset, m_pStorage->m_u64Committed + 1, noLimit, entries);
-        if (!SUCCESS(err))
+        if (!CRaftErrNo::Success(err))
         {
-            m_pLogger->Fatalf(__FILE__, __LINE__, "unexpected error when getting unapplied entries (%s)", GetErrorString(err));
+            m_pLogger->Fatalf(__FILE__, __LINE__, "unexpected error when getting unapplied entries (%s)", CRaftErrNo::GetErrorString(err));
         }
     }
 }
@@ -265,7 +265,7 @@ int CRaftMemLog::snapshot(CSnapshot **snapshot)
     if (m_unstablePart.m_pSnapshot != NULL)
     {
         *snapshot = m_unstablePart.m_pSnapshot;
-        return OK;
+        return CRaftErrNo::eOK;
     }
 
     return m_pStorage->GetSnapshot(snapshot);
@@ -273,12 +273,12 @@ int CRaftMemLog::snapshot(CSnapshot **snapshot)
 
 uint64_t CRaftMemLog::ZeroTermOnErrCompacted(uint64_t u64Term, int nErrorNo)
 {
-    if (SUCCESS(nErrorNo))
+    if (CRaftErrNo::Success(nErrorNo))
         return u64Term;
-    else if (nErrorNo == ErrCompacted)
+    else if (nErrorNo == CRaftErrNo::ErrCompacted)
         return 0;
     else
-        m_pLogger->Fatalf(__FILE__, __LINE__, "unexpected error: %s", GetErrorString(nErrorNo));
+        m_pLogger->Fatalf(__FILE__, __LINE__, "unexpected error: %s", CRaftErrNo::GetErrorString(nErrorNo));
     return 0;
 }
 
@@ -294,7 +294,7 @@ bool CRaftMemLog::IsMatchTerm(uint64_t u64Index, uint64_t u64Term)
     uint64_t u64TempTerm;
 
     int nErrorNo = GetTerm(u64Index, u64TempTerm);
-    if (SUCCESS(nErrorNo))
+    if (CRaftErrNo::Success(nErrorNo))
         bMatch = (u64TempTerm == u64Term);
     return bMatch;
 }
@@ -302,14 +302,14 @@ bool CRaftMemLog::IsMatchTerm(uint64_t u64Index, uint64_t u64Term)
 int CRaftMemLog::GetTerm(uint64_t u64Index, uint64_t &u64Term)
 {
     uint64_t dummyIndex;
-    int nErrorNo = OK;
+    int nErrorNo = CRaftErrNo::eOK;
 
     u64Term = 0;
     // the valid term range is [index of dummy entry, last index]
     dummyIndex = GetFirstIndex() - 1;
     if (u64Index < dummyIndex || u64Index > GetLastIndex())
     {
-        return OK;
+        return CRaftErrNo::eOK;
     }
 
     bool ok = m_unstablePart.MaybeTerm(u64Index, u64Term);
@@ -319,8 +319,8 @@ int CRaftMemLog::GetTerm(uint64_t u64Index, uint64_t &u64Term)
     }
 
     nErrorNo = m_pStorage->Term(u64Index, u64Term);
-    if (nErrorNo != OK && nErrorNo != ErrCompacted && nErrorNo != ErrUnavailable)
-        m_pLogger->Fatalf(__FILE__, __LINE__, "term err:%s", GetErrorString(nErrorNo));
+    if (nErrorNo != CRaftErrNo::eOK && nErrorNo != CRaftErrNo::ErrCompacted && nErrorNo != CRaftErrNo::eErrUnavailable)
+        m_pLogger->Fatalf(__FILE__, __LINE__, "term err:%s", CRaftErrNo::GetErrorString(nErrorNo));
 out:
     return nErrorNo;
 }
@@ -331,8 +331,8 @@ uint64_t CRaftMemLog::GetFirstIndex(void)
     if (!m_unstablePart.MaybeFirstIndex(u64FirstIndex))
     {
         int nErrorNo = m_pStorage->FirstIndex(u64FirstIndex);
-        if (!SUCCESS(nErrorNo))
-            m_pLogger->Fatalf(__FILE__, __LINE__, "firstIndex error:%s", GetErrorString(nErrorNo));
+        if (!CRaftErrNo::Success(nErrorNo))
+            m_pLogger->Fatalf(__FILE__, __LINE__, "firstIndex error:%s", CRaftErrNo::GetErrorString(nErrorNo));
     }
     return u64FirstIndex;
 }
@@ -343,8 +343,8 @@ uint64_t CRaftMemLog::GetLastIndex(void)
     if (!m_unstablePart.MaybeLastIndex(u64LastIndex))
     {
         int nErrorNo = m_pStorage->LastIndex(u64LastIndex);
-        if (!SUCCESS(nErrorNo))
-            m_pLogger->Fatalf(__FILE__, __LINE__, "lastIndex error:%s", GetErrorString(nErrorNo));
+        if (!CRaftErrNo::Success(nErrorNo))
+            m_pLogger->Fatalf(__FILE__, __LINE__, "lastIndex error:%s", CRaftErrNo::GetErrorString(nErrorNo));
     }
     return u64LastIndex;
 }
@@ -353,23 +353,23 @@ uint64_t CRaftMemLog::GetLastIndex(void)
 int CRaftMemLog::GetSliceEntries(uint64_t u64Low, uint64_t u64High, uint64_t u64MaxSize, EntryVec &entries)
 {
     int nErrorNo = CheckOutOfBounds(u64Low, u64High);
-    if (!SUCCESS(nErrorNo))
+    if (!CRaftErrNo::Success(nErrorNo))
         return nErrorNo;
     if (u64Low == u64High)
-        return OK;
+        return CRaftErrNo::eOK;
 
     if (u64Low < m_unstablePart.m_u64Offset)
     {
         nErrorNo = m_pStorage->Entries(u64Low, min(u64High, m_unstablePart.m_u64Offset), u64MaxSize, entries);
-        if (nErrorNo == ErrCompacted)
+        if (nErrorNo == CRaftErrNo::ErrCompacted)
             return nErrorNo;
-        else if (nErrorNo == ErrUnavailable)
+        else if (nErrorNo == CRaftErrNo::eErrUnavailable)
             m_pLogger->Fatalf(__FILE__, __LINE__, "entries[%lu:%lu) is unavailable from storage", u64Low, min(u64High, m_unstablePart.m_u64Offset));
-        else if (!SUCCESS(nErrorNo))
-            m_pLogger->Fatalf(__FILE__, __LINE__, "storage entries err:%s", GetErrorString(nErrorNo));
+        else if (!CRaftErrNo::Success(nErrorNo))
+            m_pLogger->Fatalf(__FILE__, __LINE__, "storage entries err:%s", CRaftErrNo::GetErrorString(nErrorNo));
 
         if ((uint64_t)entries.size() < min(u64High, m_unstablePart.m_u64Offset) - u64Low)
-            return OK;
+            return CRaftErrNo::eOK;
     }
 
     if (u64High > m_unstablePart.m_u64Offset)
@@ -391,7 +391,7 @@ int CRaftMemLog::GetSliceEntries(uint64_t u64Low, uint64_t u64High, uint64_t u64
         CRaftSerializer serializer;
         limitSize(u64MaxSize, entries, serializer);
     }
-    return OK;
+    return CRaftErrNo::eOK;
 }
 
 int CRaftMemLog::CheckOutOfBounds(uint64_t u64Low, uint64_t u64High)
@@ -403,14 +403,14 @@ int CRaftMemLog::CheckOutOfBounds(uint64_t u64Low, uint64_t u64High)
     {
         uint64_t u64First = GetFirstIndex();
         if (u64Low < u64First)
-            nCheck = ErrCompacted;
+            nCheck = CRaftErrNo::ErrCompacted;
         else
         {
             uint64_t u64Last = GetLastIndex();
             if (u64High > u64Last + 1)
                 m_pLogger->Fatalf(__FILE__, __LINE__, "slice[%lu,%lu) out of bound [%lu,%lu]", u64Low, u64High, u64First, u64Last);
             else
-                nCheck = OK;
+                nCheck = CRaftErrNo::eOK;
         }
     }
     return nCheck;

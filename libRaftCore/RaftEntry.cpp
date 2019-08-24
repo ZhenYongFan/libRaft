@@ -11,17 +11,6 @@ CRaftEntry::CRaftEntry(void)
     m_eType = eNormal;
 }
 
-CRaftEntry::CRaftEntry(const CRaftEntry & entry)
-{
-    Copy(entry);
-}
-
-CRaftEntry& CRaftEntry::operator =(const CRaftEntry& entry)
-{
-    Copy(entry);
-    return *this;
-}
-
 CRaftEntry::~CRaftEntry(void)
 {
 }

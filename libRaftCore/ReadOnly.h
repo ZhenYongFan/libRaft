@@ -10,17 +10,20 @@ class LIBRAFTCORE_API CReadIndexStatus
 {
 public:
     ///\brief 构造函数，记录读消息和当时的对应的日志提交号
+    ///\param u64CommitIndex 读请求时的日志提交号
+    ///\param pReadIndexMsg 读请求
     CReadIndexStatus(uint64_t u64CommitIndex, CMessage *pReadIndexMsg)       
     {
         m_u64CommitIndex = u64CommitIndex;
         m_pReadIndexMsg = pReadIndexMsg;
     }
 
+    ///\brief 析构函数
     ~CReadIndexStatus(void);
 
-    CMessage *m_pReadIndexMsg;   ///< 记录了对应的MsgReadIndex请求
-    uint64_t m_u64CommitIndex;          ///< 该MsgReadIndex请求到达时，对应的已提交位置
-    map<uint64_t, bool> m_mapAck;       ///< 记录了该MsgReadIndex相关的MsgHeartbeatResp响应的信息
+    CMessage *m_pReadIndexMsg;    ///< 记录了对应的MsgReadIndex请求
+    uint64_t m_u64CommitIndex;    ///< 该MsgReadIndex请求到达时，对应的已提交位置
+    map<uint64_t, bool> m_mapAck; ///< 记录了该MsgReadIndex相关的MsgHeartbeatResp响应的信息
 };
 
 ///\brief 记录读请求序列

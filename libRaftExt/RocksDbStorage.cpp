@@ -297,19 +297,19 @@ int CRocksDbStorage::InitialState(CHardState &stateHard, CConfState &stateConfig
 {
     stateHard = m_stateHard;
     stateConfig = m_pSnapShot->metadata().conf_state();
-    return OK;
+    return CRaftErrNo::eOK;
 }
 
 int CRocksDbStorage::SetHardState(const CHardState &stateHard)
 {
     m_stateHard = stateHard;
-    return OK;
+    return CRaftErrNo::eOK;
 }
 
 int CRocksDbStorage::GetSnapshot(CSnapshot **pSnapShot)
 {
     *pSnapShot = m_pSnapShot;
-    return OK;
+    return CRaftErrNo::eOK;
 }
 
 int CRocksDbStorage::CreateSnapshot(uint64_t u64Index, CConfState *pConfState, const string& datSnapshot, CSnapshot *pSnapshot)
@@ -332,5 +332,5 @@ int CRocksDbStorage::CreateSnapshot(uint64_t u64Index, CConfState *pConfState, c
     if (pSnapshot != NULL)
         *pSnapshot = *m_pSnapShot;
 #endif
-    return OK;
+    return CRaftErrNo::eOK;
 }

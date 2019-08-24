@@ -48,8 +48,8 @@ bool CRaft::Init(string &strErrMsg)
     m_pConfig->GetPeers(peers);
 
     int err = m_pRaftLog->InitialState(hs, cs);
-    if (!SUCCESS(err))
-        m_pLogger->Fatalf(__FILE__, __LINE__, "storage InitialState fail: %s", GetErrorString(err));
+    if (!CRaftErrNo::Success(err))
+        m_pLogger->Fatalf(__FILE__, __LINE__, "storage InitialState fail: %s", CRaftErrNo::GetErrorString(err));
     if (cs.nodes_size() > 0)
     {
         if (peers.size() > 0)
@@ -307,7 +307,7 @@ void CRaft::SendAppend(uint32_t nToID)
     //获取需要发送的Entry记录
     EntryVec entries;
     int nErrorEntries = m_pRaftLog->GetEntries(pProgress->m_u64NextLogIndex, m_pConfig->m_nMaxMsgSize, entries);
-    if (!SUCCESS(nErrorTerm) || !SUCCESS(nErrorEntries))
+    if (!CRaftErrNo::Success(nErrorTerm) || !CRaftErrNo::Success(nErrorEntries))
     {
         //1.上述两次raftLog查找出现异常时(获取不到需要发送的Entry记录)，就会形成CMessage::MsgSnap消息，将快照数据发送到指定节点。
         //2.向该节点发送CMessage::MsgSnap类型的消息
@@ -323,15 +323,15 @@ void CRaft::SendAppend(uint32_t nToID)
         pMsg->set_type(CMessage::MsgSnap);
         CSnapshot *snapshot;
         int err = m_pRaftLog->snapshot(&snapshot);
-        if (!SUCCESS(err))
+        if (!CRaftErrNo::Success(err))
         {
-            if (err == ErrSnapshotTemporarilyUnavailable)
+            if (err == CRaftErrNo::eErrSnapshotTemporarilyUnavailable)
             {
                 delete pMsg;
                 m_pLogger->Debugf(__FILE__, __LINE__, "%llu failed to send snapshot to %llu because snapshot is temporarily unavailable", m_pConfig->m_nRaftID, nToID);
                 return;
             }
-            m_pLogger->Fatalf(__FILE__, __LINE__, "get snapshot err: %s", GetErrorString(err));
+            m_pLogger->Fatalf(__FILE__, __LINE__, "get snapshot err: %s", CRaftErrNo::GetErrorString(err));
         }
 
         if (isEmptySnapshot(snapshot))
@@ -644,8 +644,8 @@ void CRaft::BecomeLeader(void)
 
     EntryVec entries;
     int err = m_pRaftLog->GetEntries(m_pRaftLog->GetCommitted() + 1, noLimit, entries);
-    if (!SUCCESS(err))
-        m_pLogger->Fatalf(__FILE__, __LINE__, "unexpected error getting uncommitted entries (%s)", GetErrorString(err));
+    if (!CRaftErrNo::Success(err))
+        m_pLogger->Fatalf(__FILE__, __LINE__, "unexpected error getting uncommitted entries (%s)", CRaftErrNo::GetErrorString(err));
 
     int nNum = GetNumOfPendingConf(entries);
     if (nNum > 1)
@@ -782,7 +782,7 @@ int CRaft::Step(const CMessage& msg)
                 m_pLogger->Infof(__FILE__, __LINE__, "%x [logterm: %llu, index: %llu, vote: %x] ignored %s from %x [logterm: %llu, index: %llu] at term %llu: lease is not expired (remaining ticks: %d)",
                     m_pConfig->m_nRaftID, m_pRaftLog->GetLastTerm(), m_pRaftLog->GetLastIndex(), m_nVoteID, CRaftUtil::MsgType2String(typeMsg), nFromID,
                     msg.logterm(), msg.index(), u64Term, m_pConfig->m_nTicksElection - m_nTicksElectionElapsed);
-                return OK;
+                return CRaftErrNo::eOK;
             }
             leader = None;
         }
@@ -836,11 +836,11 @@ int CRaft::Step(const CMessage& msg)
             m_pLogger->Infof(__FILE__, __LINE__, "%x [term: %llu] ignored a %s message with lower term from %x [term: %llu]",
                 m_pConfig->m_nRaftID, m_u64Term, CRaftUtil::MsgType2String(typeMsg), nFromID, u64Term);
         }
-        return OK;
+        return CRaftErrNo::eOK;
     }
 
     OnMsg(msg);
-    return OK;
+    return CRaftErrNo::eOK;
 }
 
 void CRaft::OnMsg(const CMessage& msg)
@@ -871,15 +871,15 @@ int CRaft::OnMsgHup(const CMessage& msg)
         //获取raftLog中已提交但未应用的Entry记录
         EntryVec entries;
         int err = m_pRaftLog->GetSliceEntries(m_pRaftLog->GetApplied() + 1, m_pRaftLog->GetCommitted() + 1, noLimit, entries);
-        if (!SUCCESS(err))
-            m_pLogger->Fatalf(__FILE__, __LINE__, "unexpected error getting unapplied entries (%s)", GetErrorString(err));
+        if (!CRaftErrNo::Success(err))
+            m_pLogger->Fatalf(__FILE__, __LINE__, "unexpected error getting unapplied entries (%s)", CRaftErrNo::GetErrorString(err));
         //检测是否有未应用的EntryConfChange记录，如果有就放弃发起选举的机会       
         int nPendingConf = GetNumOfPendingConf(entries);
         if (nPendingConf != 0 && m_pRaftLog->GetCommitted() > m_pRaftLog->GetApplied())
         {
             m_pLogger->Warningf(__FILE__, __LINE__, "%x cannot campaign at term %llu since there are still %llu pending configuration changes to apply",
                 m_pConfig->m_nRaftID, m_u64Term, nPendingConf);
-            return OK;
+            return CRaftErrNo::eOK;
         }
 
         m_pLogger->Infof(__FILE__, __LINE__, "%x is starting a new election at term %llu", m_pConfig->m_nRaftID, m_u64Term);
@@ -891,7 +891,7 @@ int CRaft::OnMsgHup(const CMessage& msg)
     }
     else //如果当前节点是Leader，则忽略CMessage::MsgHup类型的消息       
         m_pLogger->Debugf(__FILE__, __LINE__, "%x ignoring CMessage::MsgHup because already leader", m_pConfig->m_nRaftID);
-    return OK;
+    return CRaftErrNo::eOK;
 }
 
 int CRaft::OnMsgVote(const CMessage &msg)
@@ -929,7 +929,7 @@ int CRaft::OnMsgVote(const CMessage &msg)
         respMsg->set_reject(true);
         SendMsg(respMsg);
     }
-    return OK;
+    return CRaftErrNo::eOK;
 }
 
 void CRaft::StepByLeader(const CMessage& msg)

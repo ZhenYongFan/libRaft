@@ -86,7 +86,7 @@ struct blackHole : public stateMachine
 
     int step(const CMessage&)
     {
-        return OK;
+        return CRaftErrNo::eOK;
     }
     void readMessages(vector<CMessage*> &)
     {

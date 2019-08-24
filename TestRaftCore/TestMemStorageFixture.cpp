@@ -63,11 +63,11 @@ void CTestMemStorageFixture::TestStorageTerm(void)
         }
     };
     vector<tmp> tests;
-    tests.push_back(tmp(2, ErrCompacted, 0));
-    tests.push_back(tmp(3, OK, 3));
-    tests.push_back(tmp(4, OK, 4));
-    tests.push_back(tmp(5, OK, 5));
-    tests.push_back(tmp(6, ErrUnavailable, 0));
+    tests.push_back(tmp(2, CRaftErrNo::ErrCompacted, 0));
+    tests.push_back(tmp(3, CRaftErrNo::eOK, 3));
+    tests.push_back(tmp(4, CRaftErrNo::eOK, 4));
+    tests.push_back(tmp(5, CRaftErrNo::eOK, 5));
+    tests.push_back(tmp(6, CRaftErrNo::eErrUnavailable, 0));
     int i = 0;
     for (i = 0; i < tests.size(); ++i)
     {
@@ -119,13 +119,13 @@ void CTestMemStorageFixture::TestStorageEntries(void)
 
     vector<tmp> tests;
     {
-        tests.push_back(tmp(2, 6, noLimit, ErrCompacted));
-        tests.push_back(tmp(3, 4, noLimit, ErrCompacted));
+        tests.push_back(tmp(2, 6, noLimit, CRaftErrNo::ErrCompacted));
+        tests.push_back(tmp(3, 4, noLimit, CRaftErrNo::ErrCompacted));
 
         {
             CRaftEntry entry;
 
-            tmp t(4, 5, noLimit, OK);
+            tmp t(4, 5, noLimit, CRaftErrNo::eOK);
 
             entry.set_index(4);
             entry.set_term(4);
@@ -136,7 +136,7 @@ void CTestMemStorageFixture::TestStorageEntries(void)
         {
             CRaftEntry entry;
 
-            tmp t(4, 6, noLimit, OK);
+            tmp t(4, 6, noLimit, CRaftErrNo::eOK);
 
             entry.set_index(4);
             entry.set_term(4);
@@ -152,7 +152,7 @@ void CTestMemStorageFixture::TestStorageEntries(void)
         {
             CRaftEntry entry;
 
-            tmp t(4, 7, noLimit, OK);
+            tmp t(4, 7, noLimit, CRaftErrNo::eOK);
 
             entry.set_index(4);
             entry.set_term(4);
@@ -171,7 +171,7 @@ void CTestMemStorageFixture::TestStorageEntries(void)
         {
             CRaftEntry entry;
 
-            tmp t(4, 7, 0, OK);
+            tmp t(4, 7, 0, CRaftErrNo::eOK);
 
             entry.set_index(4);
             entry.set_term(4);
@@ -184,7 +184,7 @@ void CTestMemStorageFixture::TestStorageEntries(void)
             CRaftEntry entry;
 
             size_t size = serializer.ByteSize(entries[1]) + serializer.ByteSize(entries[2]);
-            tmp t(4, 7, size, OK);
+            tmp t(4, 7, size, CRaftErrNo::eOK);
 
             entry.set_index(4);
             entry.set_term(4);
@@ -200,7 +200,7 @@ void CTestMemStorageFixture::TestStorageEntries(void)
         {
             CRaftEntry entry;
             size_t size = serializer.ByteSize(entries[1]) + serializer.ByteSize(entries[2]) + serializer.ByteSize(entries[3])/2;
-            tmp t(4, 7, size, OK);
+            tmp t(4, 7, size, CRaftErrNo::eOK);
 
             entry.set_index(4);
             entry.set_term(4);
@@ -215,7 +215,7 @@ void CTestMemStorageFixture::TestStorageEntries(void)
         {
             CRaftEntry entry;
             size_t size = serializer.ByteSize(entries[1]) + serializer.ByteSize(entries[2]) + serializer.ByteSize(entries[3]) -1;
-            tmp t(4, 7, size, OK);
+            tmp t(4, 7, size, CRaftErrNo::eOK);
 
             entry.set_index(4);
             entry.set_term(4);
@@ -231,7 +231,7 @@ void CTestMemStorageFixture::TestStorageEntries(void)
         {
             CRaftEntry entry;
             size_t size = serializer.ByteSize(entries[1]) + serializer.ByteSize(entries[2]) + serializer.ByteSize(entries[3]);
-            tmp t(4, 7, size, OK);
+            tmp t(4, 7, size, CRaftErrNo::eOK);
 
             entry.set_index(4);
             entry.set_term(4);
@@ -288,7 +288,7 @@ void CTestMemStorageFixture::TestStorageLastIndex(void)
 
     uint64_t last;
     int err = s.LastIndex(last);
-    CPPUNIT_ASSERT_EQUAL(int(OK), err);
+    CPPUNIT_ASSERT_EQUAL(int(CRaftErrNo::eOK), err);
     CPPUNIT_ASSERT(5 == last);
 
     {
@@ -302,7 +302,7 @@ void CTestMemStorageFixture::TestStorageLastIndex(void)
     }
 
     err = s.LastIndex(last);
-    CPPUNIT_ASSERT(OK == err);
+    CPPUNIT_ASSERT(CRaftErrNo::eOK == err);
     CPPUNIT_ASSERT(6 == last);
 }
 
@@ -333,7 +333,7 @@ void CTestMemStorageFixture::TestStorageFirstIndex(void)
         uint64_t first;
         int err = s.FirstIndex(first);
 
-        CPPUNIT_ASSERT(OK == err);
+        CPPUNIT_ASSERT(CRaftErrNo::eOK == err);
         CPPUNIT_ASSERT(4 == first);
     }
 
@@ -343,7 +343,7 @@ void CTestMemStorageFixture::TestStorageFirstIndex(void)
         uint64_t first;
         int err = s.FirstIndex(first);
 
-        CPPUNIT_ASSERT(OK ==err);
+        CPPUNIT_ASSERT(CRaftErrNo::eOK ==err);
         CPPUNIT_ASSERT(5 == first);
     }
 }
@@ -385,10 +385,10 @@ void CTestMemStorageFixture::TestStorageCompact(void)
         }
     };
     vector<tmp> tests;
-    tests.push_back(tmp(2, ErrCompacted, 3, 3, 3));
-    tests.push_back(tmp(3, ErrCompacted, 3, 3, 3));
-    tests.push_back(tmp(4, OK, 4, 4, 2));
-    tests.push_back(tmp(5, OK, 5, 5, 1));
+    tests.push_back(tmp(2, CRaftErrNo::ErrCompacted, 3, 3, 3));
+    tests.push_back(tmp(3, CRaftErrNo::ErrCompacted, 3, 3, 3));
+    tests.push_back(tmp(4, CRaftErrNo::eOK, 4, 4, 2));
+    tests.push_back(tmp(5, CRaftErrNo::eOK, 5, 5, 1));
     int i = 0;
     for (i = 0; i < tests.size(); ++i)
     {

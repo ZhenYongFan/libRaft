@@ -28,14 +28,14 @@ int CRaftMemStorage::InitialState(CHardState &hs, CConfState &cs)
 {
     hs = hardState_;
     cs = m_pSnapShot->metadata().conf_state();
-    return OK;
+    return CRaftErrNo::eOK;
 }
 
 int CRaftMemStorage::SetHardState(const CHardState& hardState)
 {
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
     hardState_ = hardState;
-    return OK;
+    return CRaftErrNo::eOK;
 }
 
 uint64_t CRaftMemStorage::firstIndex()
@@ -47,14 +47,14 @@ int CRaftMemStorage::FirstIndex(uint64_t &u64Index)
 {
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
     u64Index = firstIndex();
-    return OK;
+    return CRaftErrNo::eOK;
 }
 
 int CRaftMemStorage::LastIndex(uint64_t &u64Index)
 {
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
     u64Index = lastIndex();
-    return OK;
+    return CRaftErrNo::eOK;
 }
 
 uint64_t CRaftMemStorage::lastIndex()
@@ -65,25 +65,25 @@ uint64_t CRaftMemStorage::lastIndex()
 int CRaftMemStorage::SetCommitted(uint64_t u64Committed)
 {
     m_u64Committed = u64Committed;
-    return OK;
+    return CRaftErrNo::eOK;
 }
 
 int CRaftMemStorage::SetApplied(uint64_t u64tApplied)
 {
     m_u64Applied = u64tApplied;
-    return OK;
+    return CRaftErrNo::eOK;
 }
 
 int CRaftMemStorage::Term(uint64_t u64Index, uint64_t &u64Term)
 {
-    int nErrorNo = OK;
+    int nErrorNo = CRaftErrNo::eOK;
     u64Term = 0;
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
     uint64_t u64Offset = entries_[0].index();
     if (u64Index < u64Offset)
-        nErrorNo = ErrCompacted;
+        nErrorNo = CRaftErrNo::ErrCompacted;
     else if (u64Index - u64Offset >= entries_.size())
-        nErrorNo = ErrUnavailable;
+        nErrorNo = CRaftErrNo::eErrUnavailable;
     else
         u64Term = entries_[u64Index - u64Offset].term();
     return nErrorNo;
@@ -93,7 +93,7 @@ int CRaftMemStorage::Term(uint64_t u64Index, uint64_t &u64Term)
 // entries[0].Index > ms.entries[0].Index
 int CRaftMemStorage::Append(const EntryVec& entries)
 {
-    int nErrorNo = OK;
+    int nErrorNo = CRaftErrNo::eOK;
     if (!entries.empty())
     {
         std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
@@ -104,7 +104,7 @@ int CRaftMemStorage::Append(const EntryVec& entries)
 
         if (last < first)
         {
-            return OK;
+            return CRaftErrNo::eOK;
         }
 
         // truncate compacted entries
@@ -123,7 +123,7 @@ int CRaftMemStorage::Append(const EntryVec& entries)
             {
                 entries_.push_back(appendEntries[i]);
             }
-            return OK;
+            return CRaftErrNo::eOK;
         }
 
         if (entries_.size() == offset)
@@ -133,7 +133,7 @@ int CRaftMemStorage::Append(const EntryVec& entries)
             {
                 entries_.push_back(appendEntries[i]);
             }
-            return OK;
+            return CRaftErrNo::eOK;
         }
 
         m_pLogger->Fatalf(__FILE__, __LINE__, "missing log entry [last: %llu, append at: %llu]",
@@ -144,15 +144,15 @@ int CRaftMemStorage::Append(const EntryVec& entries)
 
 int CRaftMemStorage::Entries(uint64_t u64Low, uint64_t u64High, uint64_t u64MaxSize, vector<CRaftEntry> &entries)
 {
-    int nErrorNo = OK;
+    int nErrorNo = CRaftErrNo::eOK;
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
     uint64_t u64Offset = entries_[0].index();
     if (u64Low <= u64Offset)
-        nErrorNo = ErrCompacted;
+        nErrorNo = CRaftErrNo::ErrCompacted;
     else if (u64High > lastIndex() + 1)
-        nErrorNo = ErrUnavailable;
+        nErrorNo = CRaftErrNo::eErrUnavailable;
     else if (entries_.size() == 1)// only contains dummy entries.
-        nErrorNo = ErrUnavailable;
+        nErrorNo = CRaftErrNo::eErrUnavailable;
     else
     {
         uint64_t u64Size = 0;
@@ -185,7 +185,7 @@ int CRaftMemStorage::GetSnapshot(CSnapshot **pSnapshot)
 {
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
     *pSnapshot = m_pSnapShot;
-    return OK;
+    return CRaftErrNo::eOK;
 }
 
 // Compact discards all log entries prior to compactIndex.
@@ -198,7 +198,7 @@ int CRaftMemStorage::Compact(uint64_t compactIndex)
     uint64_t offset = entries_[0].index();
     if (compactIndex <= offset)
     {
-        return ErrCompacted;
+        return CRaftErrNo::ErrCompacted;
     }
     if (compactIndex > lastIndex())
     {
@@ -207,7 +207,7 @@ int CRaftMemStorage::Compact(uint64_t compactIndex)
 
     uint64_t i = compactIndex - offset;
     EntryVec entries;
-    CRaftEntry entry;
+    CRaftEntry entry; // dump entry
     entry.set_index(entries_[i].index());
     entry.set_term(entries_[i].term());
     entries.push_back(entry);
@@ -216,7 +216,7 @@ int CRaftMemStorage::Compact(uint64_t compactIndex)
         entries.push_back(entries_[i]);
     }
     entries_ = entries;
-    return OK;
+    return CRaftErrNo::eOK;
 }
 
 // ApplySnapshot overwrites the contents of this Storage object with
@@ -230,7 +230,7 @@ int CRaftMemStorage::ApplySnapshot(const CSnapshot& snapshot)
     uint64_t snapIndex = snapshot.metadata().index();
     if (index >= snapIndex)
     {
-        return ErrSnapOutOfDate;
+        return CRaftErrNo::ErrSnapOutOfDate;
     }
     m_pSnapShot->CopyFrom(snapshot);
     
@@ -240,7 +240,7 @@ int CRaftMemStorage::ApplySnapshot(const CSnapshot& snapshot)
     entry.set_index(snapshot.metadata().index());
     entry.set_term(snapshot.metadata().term());
     entries_.push_back(entry);
-    return OK;
+    return CRaftErrNo::eOK;
 }
 
 // CreateSnapshot makes a snapshot which can be retrieved with Snapshot() and
@@ -253,7 +253,7 @@ int CRaftMemStorage::CreateSnapshot(uint64_t u64Index, CConfState *pConfState, c
 
     if (u64Index <= m_pSnapShot->metadata().index())
     {
-        return ErrSnapOutOfDate;
+        return CRaftErrNo::ErrSnapOutOfDate;
     }
 
     uint64_t offset = entries_[0].index();
@@ -273,5 +273,5 @@ int CRaftMemStorage::CreateSnapshot(uint64_t u64Index, CConfState *pConfState, c
     {
         *ss = *m_pSnapShot;
     }
-    return OK;
+    return CRaftErrNo::eOK;
 }

@@ -9,24 +9,30 @@ using namespace std;
 const static uint32_t None = 0;
 const static uint64_t noLimit = ULONG_MAX;
 
-///\brief 日志操作的错误号 
-enum ErrorCode
+class CRaftErrNo
 {
-    OK = 0,                 ///< 成功
-    ErrCompacted = 1,       ///< 企图读取已经被压缩后的数据
-    ErrSnapOutOfDate = 2,   ///< 企图读取过期数据
-    ErrUnavailable = 3,     ///< 企图读取索引号还没有过来的数据
-    ErrSnapshotTemporarilyUnavailable = 4,
-    ErrSeriaFail = 5
-};
+public:
+    ///\brief 日志操作的错误号 
+    enum ErrorCode
+    {
+        eOK = 0,                 ///< 成功
+        ErrCompacted = 1,       ///< 企图读取已经被压缩后的数据
+        ErrSnapOutOfDate = 2,   ///< 企图读取过期数据
+        eErrUnavailable = 3,     ///< 企图读取索引号还没有过来的数据
+        eErrSnapshotTemporarilyUnavailable = 4,
+        eErrSeriaFail = 5
+    };
+    ///\brief 检查错误号是否为成功
+    ///\param nErrorNo 错误号
+    ///\return 成功标志 true 成功；false 失败
+    static bool CRaftErrNo::Success(int nErrorNo)
+    {
+        return nErrorNo == CRaftErrNo::eOK;
+    }
 
-///\brief 检查错误号是否为成功
-///\param nErrorNo 错误号
-///\return 成功标志 true 成功；false 失败
-inline bool SUCCESS(int nErrorNo)
-{
-    return nErrorNo == OK;
-}
+    static const char* CRaftErrNo::GetErrorString(int nErrNo);
+
+};
 
 ///\brief Raft状态机枚举值的定义
 enum EStateType

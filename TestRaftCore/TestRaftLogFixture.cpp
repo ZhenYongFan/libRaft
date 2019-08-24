@@ -438,7 +438,7 @@ void CTestRaftLogFixture::TestAppend(void)
 
         EntryVec entries;
         int err = log->GetEntries(1, noLimit, entries);
-        CPPUNIT_ASSERT(err == OK);
+        CPPUNIT_ASSERT(err == CRaftErrNo::eOK);
         CPPUNIT_ASSERT(isDeepEqualEntries(entries, test.wentries));
         CPPUNIT_ASSERT_EQUAL(log->m_unstablePart.m_u64Offset, test.wunstable);
         delete log;
@@ -652,7 +652,7 @@ void CTestRaftLogFixture::TestLogMaybeAppend(void)
         {
             EntryVec entries;
             int err = log->GetSliceEntries(log->GetLastIndex() - test.entries.size() + 1, log->GetLastIndex() + 1, noLimit, entries);
-            CPPUNIT_ASSERT(err == OK);
+            CPPUNIT_ASSERT(err == CRaftErrNo::eOK);
             CPPUNIT_ASSERT(isDeepEqualEntries(test.entries, entries));
         }
         delete log;
@@ -709,7 +709,7 @@ void CTestRaftLogFixture::TestCompactionSideEffects(void)
     {
         uint64_t t;
         int err = log->GetTerm(i, t);
-        CPPUNIT_ASSERT(err == OK);
+        CPPUNIT_ASSERT(err == CRaftErrNo::eOK);
         CPPUNIT_ASSERT(t == i);
     }
 
@@ -739,7 +739,7 @@ void CTestRaftLogFixture::TestCompactionSideEffects(void)
     {
         EntryVec entries;
         int err = log->GetEntries(log->GetLastIndex(), noLimit, entries);
-        CPPUNIT_ASSERT(err == OK);
+        CPPUNIT_ASSERT(err == CRaftErrNo::eOK);
         CPPUNIT_ASSERT(entries.size()== 1);
     }
 
@@ -1222,7 +1222,7 @@ void CTestRaftLogFixture::TestCompaction(void)
         for (j = 0; j < t.compact.size(); ++j)
         {
             int err = s.Compact(t.compact[j]);
-            if (!SUCCESS(err))
+            if (!CRaftErrNo::Success(err))
             {
                 CPPUNIT_ASSERT(t.wallow);
                 continue;
@@ -1258,7 +1258,7 @@ void CTestRaftLogFixture::TestLogRestore(void)
     CPPUNIT_ASSERT(log->m_unstablePart.m_u64Offset == (index + 1));
     uint64_t t;
     int err = log->GetTerm(index, t);
-    CPPUNIT_ASSERT(SUCCESS(err));
+    CPPUNIT_ASSERT(CRaftErrNo::Success(err));
     CPPUNIT_ASSERT_EQUAL(t, term);
 
     delete log;
@@ -1314,8 +1314,8 @@ void CTestRaftLogFixture::TestIsOutOfBounds(void)
         const tmp &t = tests[i];
 
         int err = log->CheckOutOfBounds(t.lo, t.hi);
-        CPPUNIT_ASSERT(!(t.errCompacted && err != ErrCompacted));
-        CPPUNIT_ASSERT(!(!t.errCompacted && !SUCCESS(err)));
+        CPPUNIT_ASSERT(!(t.errCompacted && err != CRaftErrNo::ErrCompacted));
+        CPPUNIT_ASSERT(!(!t.errCompacted && !CRaftErrNo::Success(err)));
     }
 
     delete log;
@@ -1368,7 +1368,7 @@ void CTestRaftLogFixture::TestTerm(void)
         const tmp &t = tests[i];
         uint64_t tm;
         int err = log->GetTerm(t.index, tm);
-        CPPUNIT_ASSERT(SUCCESS(err));
+        CPPUNIT_ASSERT(CRaftErrNo::Success(err));
         CPPUNIT_ASSERT_EQUAL(tm, t.w);
     }
 
@@ -1421,7 +1421,7 @@ void CTestRaftLogFixture::TestTermWithUnstableSnapshot(void)
         const tmp &t = tests[i];
         uint64_t tm;
         int err = log->GetTerm(t.index, tm);
-        CPPUNIT_ASSERT(SUCCESS(err));
+        CPPUNIT_ASSERT(CRaftErrNo::Success(err));
         CPPUNIT_ASSERT_EQUAL(tm, t.w);
     }
 
@@ -1606,8 +1606,8 @@ void CTestRaftLogFixture::TestSlice(void)
 
         int err = log->GetSliceEntries(t.from, t.to, t.limit, ents);
 
-        CPPUNIT_ASSERT(!(t.from <= offset && err != ErrCompacted));
-        CPPUNIT_ASSERT(!(t.from > offset && !SUCCESS(err)));
+        CPPUNIT_ASSERT(!(t.from <= offset && err != CRaftErrNo::ErrCompacted));
+        CPPUNIT_ASSERT(!(t.from > offset && !CRaftErrNo::Success(err)));
         CPPUNIT_ASSERT(isDeepEqualEntries(ents, t.entries));
     }
 

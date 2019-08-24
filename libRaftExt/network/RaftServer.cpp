@@ -273,13 +273,13 @@ void CRaftServer::KvIoFunc(void)
     CRaftQueue * pIoQueue = m_pRaftFrame->GetIoQueue();
     if (NULL != pIoQueue)
     {
-        int nErrorNo = OK;
+        int nErrorNo = CRaftErrNo::eOK;
         CLogOperation *pLogOperation = static_cast<CLogOperation*> (pIoQueue->Pop());
-        while ((NULL != pLogOperation) && (2 == m_nIoState) && SUCCESS(nErrorNo))
+        while ((NULL != pLogOperation) && (2 == m_nIoState) && CRaftErrNo::Success(nErrorNo))
         {
             nErrorNo = DoLogopt(pLogOperation);
             delete pLogOperation;
-            if (SUCCESS(nErrorNo))
+            if (CRaftErrNo::Success(nErrorNo))
                 pLogOperation = static_cast<CLogOperation*> (pIoQueue->Pop());
         }
         DiscardIoTask();
@@ -288,7 +288,7 @@ void CRaftServer::KvIoFunc(void)
 
 int CRaftServer::DoLogopt(CLogOperation * pLogOperation)
 {
-    int nErrorNo = OK;
+    int nErrorNo = CRaftErrNo::eOK;
     CRaftProtoBufferSerializer *pSerializer = dynamic_cast<CRaftProtoBufferSerializer *>(m_pRaftFrame->GetSerializer());
     CRaftLog * pRaftLog = m_pRaftFrame->GetRaftLog();
     CKvService *pKvService = m_pRaftFrame->GetKvService();
@@ -364,7 +364,7 @@ int CRaftServer::DoLogopt(CLogOperation * pLogOperation)
         for (; u64Apply <= pLogOperation->m_u64ApplyTo; u64Apply++)
         {
             nErrorNo = pRaftLog->GetSliceEntries(u64Apply, u64Apply + 1, u64MaxSize, entries);
-            if (SUCCESS(nErrorNo))
+            if (CRaftErrNo::Success(nErrorNo))
             {
                 const std::string &strRequestCtx = entries[0].data();
                 if (!strRequestCtx.empty())
@@ -388,7 +388,7 @@ int CRaftServer::DoLogopt(CLogOperation * pLogOperation)
             else
                 break;
         }
-        if (SUCCESS(nErrorNo))
+        if (CRaftErrNo::Success(nErrorNo))
         {
             pRaftLog->AppliedTo(pLogOperation->m_u64ApplyTo);
             m_pRaftFrame->GetLogger()->Infof(__FILE__, __LINE__, "apply log to %llu node", pLogOperation->m_u64ApplyTo);

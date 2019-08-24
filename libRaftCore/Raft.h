@@ -60,6 +60,8 @@ public:
     void AppendEntry(EntryVec &entries);
     
     ///\brief 转化为正式Follower状态
+    ///\param u64Term 任期号
+    ///\param nLeaderID Leader的ID
     void BecomeFollower(uint64_t u64Term, uint32_t nLeaderID);
 
     ///\brief 转化为正式选举状态
@@ -362,7 +364,7 @@ public:
     ///\brief 为了减少冲突，随机生成的选举超时Tick数取值范围在[electiontimeout, 2 * electiontimeout - 1]之间
     int m_nTicksRandomizedElectionTimeout;
 
-    CLogger* m_pLogger;     ///< 日志输入对象
+    CLogger* m_pLogger;     ///< 日志输出对象
 
     CRaftConfig *m_pConfig;  ///< 节点配置信息
 

@@ -27,8 +27,6 @@ LIBRAFTCORE_API bool IsResponseMessage(const CMessage::EMessageType typeMsg);
 
 // string util
 
-LIBRAFTCORE_API const char* GetErrorString(int nErrNo);
-
 LIBRAFTCORE_API void  copyEntries(const CMessage& msg, EntryVec &entries);
 
 LIBRAFTCORE_API CRaftMemLog* newLog(CRaftStorage *pStorage, CLogger *pLogger);
