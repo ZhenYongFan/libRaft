@@ -16,8 +16,8 @@ public:
     enum ErrorCode
     {
         eOK = 0,                 ///< 成功
-        ErrCompacted = 1,       ///< 企图读取已经被压缩后的数据
-        ErrSnapOutOfDate = 2,   ///< 企图读取过期数据
+        ErrCompacted = 1,        ///< 企图读取已经被压缩后的数据
+        ErrSnapOutOfDate = 2,    ///< 企图读取过期数据
         eErrUnavailable = 3,     ///< 企图读取索引号还没有过来的数据
         eErrSnapshotTemporarilyUnavailable = 4,
         eErrSeriaFail = 5
@@ -30,8 +30,10 @@ public:
         return nErrorNo == CRaftErrNo::eOK;
     }
 
+    ///\brief 根据错误号取得对应的错误信息
+    ///\param nErrNo 错误号，有效值域是ErrorCode
+    ///\return 对应的错误信息
     static const char* CRaftErrNo::GetErrorString(int nErrNo);
-
 };
 
 ///\brief Raft状态机枚举值的定义

@@ -134,12 +134,11 @@ public:
     ///\brief 检查日志边界的合法性
     int CheckOutOfBounds(uint64_t u64Low, uint64_t u64High);
 public:
-    // storage contains all stable entries since the last snapshot.
-    CRaftStorage *m_pStorage;
+    CRaftStorage *m_pStorage; ///< 持久化日志存储，保存自上次快照之后的日志数据
 
     // unstable contains all unstable entries and snapshot.
     // they will be saved into storage.
     CUnstableLog m_unstablePart;
 
-    CLogger *m_pLogger;
+    CLogger *m_pLogger; ///< 输出日志的对象
 };

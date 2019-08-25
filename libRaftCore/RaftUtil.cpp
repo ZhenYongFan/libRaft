@@ -203,21 +203,24 @@ const char *pstrErrorString[] = {
     "ErrSnapOutOfDate",
     "ErrUnavailable",
     "ErrSnapshotTemporarilyUnavailable",
-    "ErrSeriaFail"
+    "ErrSeriaFail",
+    ""
 };
 
 const char* CRaftErrNo::GetErrorString(int nErrNo)
 {
-    const char* pstrErrMsg = "";
+    const char* pstrErrMsg ;
     if (nErrNo >= 0 && nErrNo <= int(CRaftErrNo::eErrSeriaFail))
         pstrErrMsg = pstrErrorString[nErrNo];
+    else
+        pstrErrMsg = pstrErrorString[int(CRaftErrNo::eErrSeriaFail) + 1];
     return pstrErrMsg;
 }
 
-const char *pstrTypeString[] = {
+const char *pstrTypeStrings[] = {
     "MsgHup",
     "MsgBeat",
-    "MsgProp",      //Propose 提议，建议
+    "MsgProp",
     "MsgApp",
     "MsgAppResp",
     "MsgVote",
@@ -233,15 +236,18 @@ const char *pstrTypeString[] = {
     "MsgReadIndex",
     "MsgReadIndexResp",
     "MsgPreVote",
-    "MsgPreVoteResp"
+    "MsgPreVoteResp",
+    "unknown msg"
 };
 
 const char* CRaftUtil::MsgType2String(int typeMsg)
 {
-    if (typeMsg >= 0 && typeMsg <= 18)
-        return pstrTypeString[typeMsg];
+    const char* pstrTypeString;
+    if (typeMsg >= 0 && typeMsg < CMessage::MsgNoUsed)
+        pstrTypeString = pstrTypeStrings[typeMsg];
     else
-        return "unknown msg";
+        pstrTypeString = pstrTypeStrings[CMessage::MsgNoUsed];
+    return pstrTypeString;
 }
 
 string CRaftUtil::EntryString(const CRaftEntry& entry)
