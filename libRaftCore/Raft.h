@@ -369,5 +369,7 @@ public:
     CRaftConfig *m_pConfig;  ///< 节点配置信息
 
     CRaftLog *m_pRaftLog;   ///< Raft算法的日志数据管理器
+
+    std::recursive_mutex m_mutexRaft; ///< 多线程保护，可重入
 };
 

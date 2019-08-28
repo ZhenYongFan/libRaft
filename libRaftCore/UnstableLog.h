@@ -32,10 +32,23 @@ public:
     }
     void TruncateAndAppend(const EntryVec& entries);
 
+    ///\brief 尝试取得第一条日志的索引号
+    ///\param u64Last 取得的第一条日志的索引号
+    ///\return 成功标志 true 成功; false 失败
+    ///\attention 如果有快照，才会取得成功，否则从持久化日志存储中取得
     bool MaybeFirstIndex(uint64_t &u64First);
 
+    ///\brief 尝试取得最后一条日志的索引号
+    ///\param u64Last 取得的最后一条日志的索引号
+    ///\return 成功标志 true 成功; false 失败
+    ///\attention 如果有至少1条日志或者有快照，才会取得成功
     bool MaybeLastIndex(uint64_t &u64Last);
 
+    ///\brief 尝试按日志索引号取得日志的任期号
+    ///\param u64Index 日志索引号
+    ///\param u64Term 取得日志的任期号
+    ///\return 成功标志 true 成功; false 失败
+    ///\attention 如果有日志索引号在Offset和最后一条非持久日志返回内，或者恰好是快照对应的索引号，才会取得成功
     bool MaybeTerm(uint64_t u64Index, uint64_t  &u64Term);
 
     ///\brief 部分日志持久化，从非持久化管理中移出

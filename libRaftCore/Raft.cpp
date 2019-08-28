@@ -165,6 +165,7 @@ void CRaft::ReadMessages(vector<CMessage*> &msgs)
 
 void CRaft::OnTick(void)
 {
+    std::lock_guard<std::recursive_mutex> storageGuard(m_mutexRaft);
     switch (m_stateRaft)
     {
     case eStateFollower:
@@ -321,8 +322,8 @@ void CRaft::SendAppend(uint32_t nToID)
         }
 
         pMsg->set_type(CMessage::MsgSnap);
-        CSnapshot *snapshot;
-        int err = m_pRaftLog->snapshot(&snapshot);
+        CSnapshot snapshot;
+        int err = m_pRaftLog->GetSnapshot(snapshot);
         if (!CRaftErrNo::Success(err))
         {
             if (err == CRaftErrNo::eErrSnapshotTemporarilyUnavailable)
@@ -333,14 +334,14 @@ void CRaft::SendAppend(uint32_t nToID)
             }
             m_pLogger->Fatalf(__FILE__, __LINE__, "get snapshot err: %s", CRaftErrNo::GetErrorString(err));
         }
-
-        if (isEmptySnapshot(snapshot))
+        CSnapshot *pSnapshot = &snapshot;
+        if (isEmptySnapshot(pSnapshot))
             m_pLogger->Fatalf(__FILE__, __LINE__, "need non-empty snapshot");
 
         CSnapshot *s = pMsg->mutable_snapshot();
-        s->CopyFrom(*snapshot);
-        uint64_t sindex = snapshot->metadata().index();
-        uint64_t sterm = snapshot->metadata().term();
+        s->CopyFrom(*pSnapshot);
+        uint64_t sindex = pSnapshot->metadata().index();
+        uint64_t sterm = pSnapshot->metadata().term();
         m_pLogger->Debugf(__FILE__, __LINE__, "%x [firstindex: %llu, commit: %llu] sent snapshot[index: %llu, term: %llu] to %x [%s]",
             m_pConfig->m_nRaftID, m_pRaftLog->GetFirstIndex(), m_pRaftLog->GetCommitted(), sindex, sterm, nToID, pProgress->GetInfoText().c_str());
         pProgress->BecomeSnapshot(sindex);
@@ -753,6 +754,8 @@ int CRaft::Poll(uint32_t nRaftID, CMessage::EMessageType typeMsg, bool bAccepted
 
 int CRaft::Step(const CMessage& msg)
 {
+    //多线程保护需要可重入
+    std::lock_guard<std::recursive_mutex> storageGuard(m_mutexRaft);
     m_pLogger->Debugf(__FILE__, __LINE__, "msg %s %llu -> %llu, term:%llu",
         CRaftUtil::MsgType2String(msg.type()), msg.from(), msg.to(), m_u64Term);
     // Handle the message term, which may result in our stepping down to a follower.

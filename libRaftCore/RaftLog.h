@@ -108,10 +108,19 @@ public:
     ///\brief 取得所有非持久化日志
     ///\param entries 取得的日志集合
     virtual void UnstableEntries(EntryVec &entries) = 0;
-
-    virtual int snapshot(CSnapshot **snapshot) = 0;
-
+    
+    ///\brief 取得当前快照
+    ///\param snapshot 返回的快照对象
+    ///\return 成功标志 OK 成功；其他失败
+    virtual int GetSnapshot(CSnapshot & snapshot) = 0;
+    
+    ///\brief 根据快照恢复数据
+    ///\param snapshot 快照数据
     virtual void Restore(const CSnapshot& snapshot) = 0;
 
+    ///\brief 取得初始化状态
+    ///\param hs 返回的持久化状态
+    ///\param cs 返回的节点信息
+    ///\return 成功标志 OK 成功；其他 失败
     virtual int InitialState(CHardState &hs, CConfState &cs) = 0;
 };

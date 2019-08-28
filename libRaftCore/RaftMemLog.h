@@ -109,16 +109,30 @@ public:
     ///\param entries 取得的日志集合
     virtual void UnstableEntries(EntryVec &entries);
 
-    virtual int snapshot(CSnapshot **snapshot);
+    ///\brief 取得当前快照
+    ///\param snapshot 返回的快照对象
+    ///\return 成功标志 OK 成功；其他失败
+    virtual int GetSnapshot(CSnapshot & snapshot);
 
+    ///\brief 根据快照恢复状态
+    ///\param snapshot 外部传入的快照
+    ///\return  成功标志 OK 成功；其他失败
     virtual void Restore(const CSnapshot& snapshot);
 
+    ///\brief 取得初始化状态
+    ///\param hs 返回的持久化状态
+    ///\param cs 返回的节点信息
+    ///\return 成功标志 OK 成功；其他 失败
     virtual int InitialState(CHardState &hs, CConfState &cs);
 
+    ///\brief 生成用于调试的字符串信息
+    ///\returns 当前信息：日志提交和应用的索引号，非持久日志的偏移和数量
     string String(void);
 
     uint64_t findConflict(const EntryVec& entries);
 
+    ///\brief 取得非持久日志的集合
+    ///\param entries 返回的日志集合
     void unstableEntries(EntryVec &entries);
 
     void nextEntries(EntryVec& entries);
@@ -131,14 +145,12 @@ public:
 
     void allEntries(EntryVec &entries);
     
-    ///\brief 检查日志边界的合法性
+    ///\brief 检查日志边界的合法性，闭区间
     int CheckOutOfBounds(uint64_t u64Low, uint64_t u64High);
 public:
-    CRaftStorage *m_pStorage; ///< 持久化日志存储，保存自上次快照之后的日志数据
+    CRaftStorage *m_pStorage;    ///< 持久化日志存储，保存自上次快照之后的日志数据
 
-    // unstable contains all unstable entries and snapshot.
-    // they will be saved into storage.
-    CUnstableLog m_unstablePart;
+    CUnstableLog m_unstablePart; ///< 即将持久化存储的在内存中临时保存的日志和快照
 
     CLogger *m_pLogger; ///< 输出日志的对象
 };

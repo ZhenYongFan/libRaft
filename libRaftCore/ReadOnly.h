@@ -63,5 +63,5 @@ public:
     ///\brief 记录了MsgReadIndex请求对应的消息ID，这样可以保证MsgReadIndex的顺序
     std::list<std::string> m_listRead;
 
-    CLogger *m_pLogger;
+    CLogger *m_pLogger; ///< 日志输出器
 };

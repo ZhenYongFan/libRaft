@@ -1463,8 +1463,8 @@ void CTestRaftFixtrue::TestCandidateConcede(void)
         entry.set_data(data);
         entries.push_back(entry);
     }
-    s->entries_.clear();
-    s->entries_.insert(s->entries_.end(), entries.begin(), entries.end());
+    s->m_entries.clear();
+    s->m_entries.insert(s->m_entries.end(), entries.begin(), entries.end());
   
     CRaftMemLog *log = new CRaftMemLog(s, &kDefaultLogger);
     log->m_pStorage->SetCommitted(2);
@@ -1626,8 +1626,8 @@ void CTestRaftFixtrue::TestOldMessages(void)
         entry.set_data(data);
         entries.push_back(entry);
     }
-    s->entries_.clear();
-    s->entries_.insert(s->entries_.end(), entries.begin(), entries.end());
+    s->m_entries.clear();
+    s->m_entries.insert(s->m_entries.end(), entries.begin(), entries.end());
 
     CRaftMemLog *log = new CRaftMemLog(s, &kDefaultLogger);
     log->m_pStorage->SetCommitted(4);
@@ -1768,8 +1768,8 @@ void CTestRaftFixtrue::TestProposal(void)
                 entry.set_data(data);
                 entries.push_back(entry);
             }
-            s->entries_.clear();
-            s->entries_.insert(s->entries_.end(), entries.begin(), entries.end());
+            s->m_entries.clear();
+            s->m_entries.insert(s->m_entries.end(), entries.begin(), entries.end());
 
             CRaftMemLog *log = new CRaftMemLog(s, &kDefaultLogger);
             log->m_pStorage->SetCommitted(2);
@@ -1870,8 +1870,8 @@ void CTestRaftFixtrue::TestProposalByProxy(void)
             entry.set_data(data);
             entries.push_back(entry);
         }
-        s->entries_.clear();
-        s->entries_.insert(s->entries_.end(), entries.begin(), entries.end());
+        s->m_entries.clear();
+        s->m_entries.insert(s->m_entries.end(), entries.begin(), entries.end());
 
         CRaftMemLog *log = new CRaftMemLog(s, &kDefaultLogger);
         log->m_pStorage->SetCommitted(2);
@@ -2883,8 +2883,8 @@ void testRecvMsgVote(CMessage::EMessageType type)
             entry.set_index(2);
             entries.push_back(entry);
         }
-        s->entries_.clear();
-        s->entries_.insert(s->entries_.end(), entries.begin(), entries.end());
+        s->m_entries.clear();
+        s->m_entries.insert(s->m_entries.end(), entries.begin(), entries.end());
 
         CRaftMemLog *log = new CRaftMemLog(s, &kDefaultLogger);
         log->m_unstablePart.m_u64Offset = 3;
@@ -3885,7 +3885,7 @@ void CTestRaftFixtrue::TestLeaderAppResp(void)
             entry.set_index(2);
             entry.set_term(1);
             entries.push_back(entry);
-            s->entries_ = entries;
+            s->m_entries = entries;
             pMemLog = newLog(s, &kDefaultLogger);
             pMemLog->m_unstablePart.m_u64Offset = 3;
             r->m_pRaftLog = pMemLog;
@@ -4037,7 +4037,7 @@ void CTestRaftFixtrue::TestRecvMsgBeat(void)
         entries.push_back(entry);
 
         CRaftMemStorage *s = new CRaftMemStorage(&kDefaultLogger);
-        s->entries_ = entries;
+        s->m_entries = entries;
         CRaftMemLog* pMemLog = newLog(s, &kDefaultLogger);
         r->m_pRaftLog = pMemLog;
 

@@ -190,7 +190,7 @@ bool CTestRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int electi
         {
             m_pStorage = new CRaftMemStorage(pLogger);
             m_pStorage->Append(ents);
-            m_pStorage->hardState_.set_term(u64Term);
+            m_pStorage->m_stateHard.set_term(u64Term);
             m_pRaftLog = newLog(m_pStorage, pLogger);
             m_pRaftNode = new CRaft(m_pConfig, m_pRaftLog, m_pMsgQueue, m_pIoQueue, pLogger);
             if (m_pRaftNode->Init(strErrMsg))
@@ -214,9 +214,9 @@ bool CTestRaftFrame::Init(uint32_t id, const vector<uint32_t>& peers, int electi
         {
             m_pStorage = new CRaftMemStorage(pLogger);
             
-            m_pStorage->entries_ = ents;
-            m_pStorage->hardState_.set_term(u64Term);
-            m_pStorage->hardState_.set_commit(u64Committed);
+            m_pStorage->m_entries = ents;
+            m_pStorage->m_stateHard.set_term(u64Term);
+            m_pStorage->m_stateHard.set_commit(u64Committed);
 
             m_pConfig->m_u64Applied = u64Applied;
             m_pRaftLog = newLog(m_pStorage, pLogger);

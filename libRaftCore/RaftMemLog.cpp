@@ -260,11 +260,11 @@ bool CRaftMemLog::hasNextEntries() {
   return m_pStorage->m_u64Committed + 1 > max(m_pStorage->m_u64Applied + 1, GetFirstIndex());
 }
 
-int CRaftMemLog::snapshot(CSnapshot **snapshot)
+int CRaftMemLog::GetSnapshot(CSnapshot & snapshot)
 {
     if (m_unstablePart.m_pSnapshot != NULL)
     {
-        *snapshot = m_unstablePart.m_pSnapshot;
+        snapshot = *m_unstablePart.m_pSnapshot;
         return CRaftErrNo::eOK;
     }
 

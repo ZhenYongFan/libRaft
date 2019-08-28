@@ -73,7 +73,7 @@ void CTestMemStorageFixture::TestStorageTerm(void)
     {
         const tmp &test = tests[i];
         CRaftMemStorage s(&kDefaultLogger);
-        s.entries_ = entries;
+        s.m_entries = entries;
         uint64_t term;
         int err = s.Term(test.i, term);
         CPPUNIT_ASSERT_EQUAL(err, test.werr);
@@ -254,7 +254,7 @@ void CTestMemStorageFixture::TestStorageEntries(void)
         const tmp &test = tests[i];
         CRaftMemStorage s(&kDefaultLogger);
         EntryVec ret;
-        s.entries_ = entries;
+        s.m_entries = entries;
 
         int err = s.Entries(test.lo, test.hi, test.maxsize, ret);
         CPPUNIT_ASSERT_EQUAL(err, test.werr);
@@ -284,7 +284,7 @@ void CTestMemStorageFixture::TestStorageLastIndex(void)
     }
 
     CRaftMemStorage s(&kDefaultLogger);
-    s.entries_ = entries;
+    s.m_entries = entries;
 
     uint64_t last;
     int err = s.LastIndex(last);
@@ -327,7 +327,7 @@ void CTestMemStorageFixture::TestStorageFirstIndex(void)
     }
 
     CRaftMemStorage s(&kDefaultLogger);
-    s.entries_ = entries;
+    s.m_entries = entries;
 
     {
         uint64_t first;
@@ -369,7 +369,7 @@ void CTestMemStorageFixture::TestStorageCompact(void)
     }
 
     CRaftMemStorage s(&kDefaultLogger);
-    s.entries_ = entries;
+    s.m_entries = entries;
 
     struct tmp
     {
@@ -394,13 +394,13 @@ void CTestMemStorageFixture::TestStorageCompact(void)
     {
         const tmp &test = tests[i];
         CRaftMemStorage s(&kDefaultLogger);
-        s.entries_ = entries;
+        s.m_entries = entries;
 
         int err = s.Compact(test.i);
         CPPUNIT_ASSERT_EQUAL(err, test.werr);
-        CPPUNIT_ASSERT_EQUAL(s.entries_[0].index(), test.windex);
-        CPPUNIT_ASSERT_EQUAL(s.entries_[0].term(), test.wterm);
-        CPPUNIT_ASSERT(s.entries_.size() == test.wlen);
+        CPPUNIT_ASSERT_EQUAL(s.m_entries[0].index(), test.windex);
+        CPPUNIT_ASSERT_EQUAL(s.m_entries[0].term(), test.wterm);
+        CPPUNIT_ASSERT(s.m_entries.size() == test.wlen);
     }
 }
 

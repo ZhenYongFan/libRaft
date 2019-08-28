@@ -12,7 +12,7 @@ CRaftMemStorage::CRaftMemStorage(CLogger *pLogger,CRaftSerializer *pRaftSerializ
       m_pLogger(pLogger)
 {
     // When starting from scratch populate the list with a dummy entry at term zero.
-    entries_.push_back(CRaftEntry());
+    m_entries.push_back(CRaftEntry());
 }
 
 CRaftMemStorage::~CRaftMemStorage(void)
@@ -26,7 +26,7 @@ CRaftMemStorage::~CRaftMemStorage(void)
 
 int CRaftMemStorage::InitialState(CHardState &hs, CConfState &cs)
 {
-    hs = hardState_;
+    hs = m_stateHard;
     cs = m_pSnapShot->metadata().conf_state();
     return CRaftErrNo::eOK;
 }
@@ -34,32 +34,32 @@ int CRaftMemStorage::InitialState(CHardState &hs, CConfState &cs)
 int CRaftMemStorage::SetHardState(const CHardState& hardState)
 {
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
-    hardState_ = hardState;
+    m_stateHard = hardState;
     return CRaftErrNo::eOK;
 }
 
-uint64_t CRaftMemStorage::firstIndex()
+uint64_t CRaftMemStorage::GetFirstIdx()
 {
-    return entries_[0].index() + 1;
+    return m_entries[0].index() + 1;
 }
 
 int CRaftMemStorage::FirstIndex(uint64_t &u64Index)
 {
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
-    u64Index = firstIndex();
+    u64Index = GetFirstIdx();
     return CRaftErrNo::eOK;
 }
 
 int CRaftMemStorage::LastIndex(uint64_t &u64Index)
 {
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
-    u64Index = lastIndex();
+    u64Index = GetLastIdx();
     return CRaftErrNo::eOK;
 }
 
-uint64_t CRaftMemStorage::lastIndex()
+uint64_t CRaftMemStorage::GetLastIdx()
 {
-    return entries_[0].index() + entries_.size() - 1;
+    return m_entries[0].index() + m_entries.size() - 1;
 }
 
 int CRaftMemStorage::SetCommitted(uint64_t u64Committed)
@@ -79,13 +79,13 @@ int CRaftMemStorage::Term(uint64_t u64Index, uint64_t &u64Term)
     int nErrorNo = CRaftErrNo::eOK;
     u64Term = 0;
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
-    uint64_t u64Offset = entries_[0].index();
+    uint64_t u64Offset = m_entries[0].index();
     if (u64Index < u64Offset)
         nErrorNo = CRaftErrNo::ErrCompacted;
-    else if (u64Index - u64Offset >= entries_.size())
+    else if (u64Index - u64Offset >= m_entries.size())
         nErrorNo = CRaftErrNo::eErrUnavailable;
     else
-        u64Term = entries_[u64Index - u64Offset].term();
+        u64Term = m_entries[u64Index - u64Offset].term();
     return nErrorNo;
 }
 
@@ -99,7 +99,7 @@ int CRaftMemStorage::Append(const EntryVec& entries)
         std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
         EntryVec appendEntries = entries;
 
-        uint64_t first = firstIndex();
+        uint64_t first = GetFirstIdx();
         uint64_t last = appendEntries[0].index() + appendEntries.size() - 1;
 
         if (last < first)
@@ -114,30 +114,30 @@ int CRaftMemStorage::Append(const EntryVec& entries)
             appendEntries.erase(appendEntries.begin(), appendEntries.begin() + index);
         }
 
-        uint64_t offset = appendEntries[0].index() - entries_[0].index();
-        if (entries_.size() > offset)
+        uint64_t offset = appendEntries[0].index() - m_entries[0].index();
+        if (m_entries.size() > offset)
         {
-            entries_.erase(entries_.begin(), entries_.begin() + offset);
+            m_entries.erase(m_entries.begin(), m_entries.begin() + offset);
             int i;
             for (i = 0; i < appendEntries.size(); ++i)
             {
-                entries_.push_back(appendEntries[i]);
+                m_entries.push_back(appendEntries[i]);
             }
             return CRaftErrNo::eOK;
         }
 
-        if (entries_.size() == offset)
+        if (m_entries.size() == offset)
         {
             int i;
             for (i = 0; i < appendEntries.size(); ++i)
             {
-                entries_.push_back(appendEntries[i]);
+                m_entries.push_back(appendEntries[i]);
             }
             return CRaftErrNo::eOK;
         }
 
         m_pLogger->Fatalf(__FILE__, __LINE__, "missing log entry [last: %llu, append at: %llu]",
-            lastIndex(), appendEntries[0].index());
+            GetLastIdx(), appendEntries[0].index());
     }
     return nErrorNo;
 }
@@ -146,12 +146,12 @@ int CRaftMemStorage::Entries(uint64_t u64Low, uint64_t u64High, uint64_t u64MaxS
 {
     int nErrorNo = CRaftErrNo::eOK;
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
-    uint64_t u64Offset = entries_[0].index();
+    uint64_t u64Offset = m_entries[0].index();
     if (u64Low <= u64Offset)
         nErrorNo = CRaftErrNo::ErrCompacted;
-    else if (u64High > lastIndex() + 1)
+    else if (u64High > GetLastIdx() + 1)
         nErrorNo = CRaftErrNo::eErrUnavailable;
-    else if (entries_.size() == 1)// only contains dummy entries.
+    else if (m_entries.size() == 1)// only contains dummy entries.
         nErrorNo = CRaftErrNo::eErrUnavailable;
     else
     {
@@ -165,57 +165,57 @@ int CRaftMemStorage::Entries(uint64_t u64Low, uint64_t u64High, uint64_t u64MaxS
         {
             if (0 == u64MaxSize)
             {
-                entries.push_back(entries_[nIndex]);
+                entries.push_back(m_entries[nIndex]);
                 break;
             }
             else
             {
-                u64Size += pRaftSerializer->ByteSize(entries_[nIndex]);
+                u64Size += pRaftSerializer->ByteSize(m_entries[nIndex]);
                 if (u64Size > u64MaxSize)
                     break;
                 else
-                    entries.push_back(entries_[nIndex]);
+                    entries.push_back(m_entries[nIndex]);
             }
         }
     }
     return nErrorNo;
 }
 
-int CRaftMemStorage::GetSnapshot(CSnapshot **pSnapshot)
+int CRaftMemStorage::GetSnapshot(CSnapshot & snapshot)
 {
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
-    *pSnapshot = m_pSnapShot;
+    snapshot = *m_pSnapShot;
     return CRaftErrNo::eOK;
 }
 
 // Compact discards all log entries prior to compactIndex.
 // It is the application's responsibility to not attempt to compact an index
 // greater than raftLog.applied.
-int CRaftMemStorage::Compact(uint64_t compactIndex)
+int CRaftMemStorage::Compact(uint64_t u64CompactIndex)
 {
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
 
-    uint64_t offset = entries_[0].index();
-    if (compactIndex <= offset)
+    uint64_t u64Offset = m_entries[0].index();
+    if (u64CompactIndex <= u64Offset)
     {
         return CRaftErrNo::ErrCompacted;
     }
-    if (compactIndex > lastIndex())
+    if (u64CompactIndex > GetLastIdx())
     {
-        m_pLogger->Fatalf(__FILE__, __LINE__, "compact %llu is out of bound lastindex(%llu)", compactIndex, lastIndex());
+        m_pLogger->Fatalf(__FILE__, __LINE__, "compact %llu is out of bound lastindex(%llu)", u64CompactIndex, GetLastIdx());
     }
 
-    uint64_t i = compactIndex - offset;
+    uint64_t i = u64CompactIndex - u64Offset;
     EntryVec entries;
-    CRaftEntry entry; // dump entry
-    entry.set_index(entries_[i].index());
-    entry.set_term(entries_[i].term());
+    CRaftEntry entry; //dummy entry
+    entry.set_index(m_entries[i].index());
+    entry.set_term(m_entries[i].term());
     entries.push_back(entry);
-    for (i = i + 1; i < entries_.size(); ++i)
+    for (i = i + 1; i < m_entries.size(); ++i)
     {
-        entries.push_back(entries_[i]);
+        entries.push_back(m_entries[i]);
     }
-    entries_ = entries;
+    m_entries = entries;
     return CRaftErrNo::eOK;
 }
 
@@ -223,55 +223,56 @@ int CRaftMemStorage::Compact(uint64_t compactIndex)
 // those of the given snapshot.
 int CRaftMemStorage::ApplySnapshot(const CSnapshot& snapshot)
 {
+    int nErrNo;
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
 
     //handle check for old snapshot being applied
     uint64_t index = m_pSnapShot->metadata().index();
     uint64_t snapIndex = snapshot.metadata().index();
     if (index >= snapIndex)
+        nErrNo = CRaftErrNo::ErrSnapOutOfDate;
+    else
     {
-        return CRaftErrNo::ErrSnapOutOfDate;
+        m_pSnapShot->CopyFrom(snapshot);
+
+        //初始化内存中的日志
+        m_entries.clear();
+        CRaftEntry entry; //dummy entry
+        entry.set_index(snapshot.metadata().index());
+        entry.set_term(snapshot.metadata().term());
+        m_entries.push_back(entry);
+        nErrNo = CRaftErrNo::eOK;
     }
-    m_pSnapShot->CopyFrom(snapshot);
-    
-    //初始化内存中的日志
-    entries_.clear();
-    CRaftEntry entry;
-    entry.set_index(snapshot.metadata().index());
-    entry.set_term(snapshot.metadata().term());
-    entries_.push_back(entry);
-    return CRaftErrNo::eOK;
+    return nErrNo;
 }
 
 // CreateSnapshot makes a snapshot which can be retrieved with Snapshot() and
 // can be used to reconstruct the state at that point.
 // If any configuration changes have been made since the last compaction,
 // the result of the last ApplyConfChange must be passed in.
-int CRaftMemStorage::CreateSnapshot(uint64_t u64Index, CConfState *pConfState, const string& data, CSnapshot *ss)
+int CRaftMemStorage::CreateSnapshot(uint64_t u64Index, CConfState *pConfState, const string& strData, CSnapshot *pSnapshot)
 {
+    int nErrNo ;
     std::lock_guard<std::mutex> storageGuard(m_mutexStorage);
 
     if (u64Index <= m_pSnapShot->metadata().index())
+        nErrNo = CRaftErrNo::ErrSnapOutOfDate;
+    else
     {
-        return CRaftErrNo::ErrSnapOutOfDate;
-    }
+        if (u64Index > GetLastIdx())
+        {
+            m_pLogger->Fatalf(__FILE__, __LINE__, "snapshot %d is out of bound lastindex(%llu)", u64Index, GetLastIdx());
+        }
 
-    uint64_t offset = entries_[0].index();
-    if (u64Index > lastIndex())
-    {
-        m_pLogger->Fatalf(__FILE__, __LINE__, "snapshot %d is out of bound lastindex(%llu)", u64Index, lastIndex());
+        uint64_t u64Offset = m_entries[0].index();
+        m_pSnapShot->mutable_metadata()->set_index(u64Index);
+        m_pSnapShot->mutable_metadata()->set_term(m_entries[u64Index - u64Offset].term());
+        if (pConfState != NULL)
+            *(m_pSnapShot->mutable_metadata()->mutable_conf_state()) = *pConfState;
+        m_pSnapShot->set_data(strData);
+        if (pSnapshot != NULL)
+            *pSnapshot = *m_pSnapShot;
+        nErrNo = CRaftErrNo::eOK;
     }
-
-    m_pSnapShot->mutable_metadata()->set_index(u64Index);
-    m_pSnapShot->mutable_metadata()->set_term(entries_[u64Index - offset].term());
-    if (pConfState != NULL)
-    {
-        *(m_pSnapShot->mutable_metadata()->mutable_conf_state()) = *pConfState;
-    }
-    m_pSnapShot->set_data(data);
-    if (ss != NULL)
-    {
-        *ss = *m_pSnapShot;
-    }
-    return CRaftErrNo::eOK;
+    return nErrNo;
 }

@@ -122,11 +122,13 @@ bool isSoftStateEqual(const CSoftState& s1, const CSoftState& s2) {
   return s1.m_stateRaft == s2.m_stateRaft;
 }
 
-bool isEmptySnapshot(const CSnapshot* snapshot) {
-  if (snapshot == NULL) {
-    return true;
-  }
-  return snapshot->metadata().index() == 0;
+bool isEmptySnapshot(const CSnapshot* pSnapshot)
+{
+    if (pSnapshot == NULL)
+    {
+        return true;
+    }
+    return pSnapshot->metadata().index() == 0;
 }
 
 bool isDeepEqualReadStates(const vector<CReadState*>& rs1, const vector<CReadState*>& rs2) {
