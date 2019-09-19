@@ -306,9 +306,9 @@ int CRocksDbStorage::SetHardState(const CHardState &stateHard)
     return CRaftErrNo::eOK;
 }
 
-int CRocksDbStorage::GetSnapshot(CSnapshot **pSnapShot)
+int CRocksDbStorage::GetSnapshot(CSnapshot & snapshot)
 {
-    *pSnapShot = m_pSnapShot;
+    snapshot = *m_pSnapShot;
     return CRaftErrNo::eOK;
 }
 

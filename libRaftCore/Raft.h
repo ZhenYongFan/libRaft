@@ -193,6 +193,10 @@ public:
     ///\attention 当提交号变化，会调用CommitWrite向具体服务提交写操作，还会向Follower发送广播日志的消息
     bool MaybeCommit(void);
 
+    ///\brief 子节点同步进度信息复位
+    ///\param nRaftID 子节点ID
+    ///\param u64Match 已经同步的日志索引号
+    ///\param u64Next 即将同步的日志索引号
     void ResetProgress(uint32_t nRaftID, uint64_t u64Match, uint64_t u64Next);
 
     ///\brief 向指定节点发送日志
@@ -203,17 +207,30 @@ public:
     ///\param nodes 节点ID列表
     void GetNodes(vector<uint32_t> &nodes);
 
+    ///\brief 根据快照恢复状态机
+    ///\param snapshot 快照
+    ///\return 成功标志 true 成功；false 失败
     bool Restore(const CSnapshot& snapshot);
 protected:
     
+    //\brief 判断当前节点是否有Leader
+    //\return 是否有Leader的标志：true 有Leader;false 没有Leader
     bool HasLeader(void);
+    
+    //\brief 取得非持久状态
+    //\param ss 返回的非持久状态
     void GetSoftState(CSoftState &ss);
+
+    //\brief 取得可持久状态
+    //\param hs 返回的可持久状态
     void GetHardState(CHardState &hs);
 
     ///\brief 取得法定人数，即有效节点数的1/2 + 1
     int GetQuorum(void);
 
     ///\brief 发送Raft Peer之间的消息
+    ///\param pMsg 要发生的消息
+    ///\attention 消息的生命周期由队列接管
     void SendMsg(CMessage *pMsg);
 
     ///\brief Follower发起读请求
@@ -280,6 +297,8 @@ protected:
     ///\param msgTimeout 立即超时消息
     void OnMsgTimeoutNow(const CMessage &msgTimeout);
 
+    ///\brief Follower或者Candidate处理Leader发出快照消息
+    ///\param msg 包含快照的消息
     void OnSnapshot(const CMessage& msg);
 
     ///\brief 投票并且计算的的票数
@@ -295,39 +314,59 @@ protected:
     virtual void OnMsg(const CMessage& msg);
 
     ///\brief Follower处理 MsgHup
+    ///\param msg MsgHup消息
     virtual int OnMsgHup(const CMessage& msg);
 
     ///\brief 处理MsgVote和MsgPreVote
+    ///\param msg MsgVote或者MsgPreVote消息
     virtual int OnMsgVote(const CMessage &msg);
 
     ///\brief Leader处理法定人数检查，可能会修改状态为Follower
+    ///\param msg 检查是否满足法定人数的消息
     ///\attention 如果和大部分Follower没有进行有效应答，则认为分裂，转为Follower
     virtual void OnMsgCheckQuorum(const CMessage &msg);
 
     ///\brief Leader处理写请求
+    ///\param msg 写请求消息
     virtual void OnMsgProp(const CMessage &msg);
     
     ///\brief Leader处理读请求
+    ///\param msg 读请求消息
     virtual void OnMsgReadIndex(const CMessage &msg);
     
     ///\brief Leader处理涉及到组员的请求
+    ///\param msg 涉及组员的消息
     void OnMsgProgress(const CMessage &msg);
     
-    ///\brief Leader处理组员的心跳应答 
+    ///\brief Leader处理组员的心跳应答
+    ///\param msg 心跳应答消息
+    ///\param pProgress 组员进度信息
     void OnHeartbeatResp(const CMessage& msg, CProgress *pProgress);
     
     ///\brief Leader处理组员的追加日志应答 
+    ///\param msg 追加日志的应答信息
+    ///\param pProgress Follower的发生进度
     void OnAppResp(const CMessage& msg, CProgress *pProgress);
+
+    ///\brief Leader处理快照传递状态的消息
+    ///\param msg 包含快照传递状态的消息
+    ///\param pProgress Follower的发生进度
     void OnMsgSnapStatus(const CMessage &msg, CProgress * pProgress);
+   
+    ///\brief Leader收到无法向Follower传送消息的消息
+    ///\param msg 无法传送的消息
+    ///\param pProgress Follower的发生进度
     void OnMsgUnreachable(const CMessage &msg, CProgress * pProgress);
     
     ///\brief Leader处理组员的切换Leader的申请
+    ///\param msg 切换Leader的消息
+    ///\param pProgress Follower的发生进度
     void OnMsgTransferLeader(const CMessage &msg, CProgress * pProgress);
     
-    ///\brief Leader每选举Tick数，检查一下法定人数，假设，在此期间应该有正常通讯
+    ///\brief Leader每选举超时Tick数，检查一下法定人数，假设：在此期间应该有正常通讯
+    ///\return 是否满足法定人数的标志 true 满足；false 不满足
     bool CheckQuorumActive(void);
 
- 
     ///\brief 终止Leader状态转移动作
     void AbortLeaderTransfer(void);
     
@@ -335,6 +374,7 @@ protected:
     ///\param nToID 选举目标
     void SendTimeoutNow(uint32_t nToID);
     
+    ///\brief 复位修改配置的标志
     void ResetPendingConf(void);
 public:
     uint32_t m_nVoteID;             ///< 当前投票目标的ID
@@ -348,7 +388,7 @@ public:
     CRaftQueue *m_pMsgQueue;         ///< Message缓冲区
     CRaftQueue *m_pIoQueue;          ///< 数据IO队列
     std::list<CMessage *> m_listWrite;///< Leader和代理Follower正在执行的写任务
-    CReadOnly* m_pReadOnly;          ///< Leader 正在执行的读任务
+    CReadOnly* m_pReadOnly;           ///< Leader 正在执行的读任务
 
     // New configuration is ignored if there exists unapplied configuration.
     bool m_bPendingConf;
@@ -366,7 +406,7 @@ public:
 
     CLogger* m_pLogger;     ///< 日志输出对象
 
-    CRaftConfig *m_pConfig;  ///< 节点配置信息
+    CRaftConfig *m_pConfig; ///< 节点配置信息
 
     CRaftLog *m_pRaftLog;   ///< Raft算法的日志数据管理器
 

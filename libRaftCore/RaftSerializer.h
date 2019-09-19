@@ -2,6 +2,7 @@
 #include "libRaftCore.h"
 class CRaftEntry;
 class CMessage;
+class CConfChange;
 
 ///\brief Raft对象的串行化工具
 class LIBRAFTCORE_API CRaftSerializer
@@ -39,4 +40,15 @@ public:
     ///\param strValue 要解码的string
     ///\return 成功标志 true 解码成功；false 失败
     virtual bool ParseMessage(CMessage &msg, const std::string &strValue);
+
+    ///\brief 将配置变化项编码为string
+    ///\param conf 配置变化项
+    ///\param strValue 编码生成的string
+    virtual void SerializeConfChangee(const CConfChange &conf, std::string &strValue);
+
+    ///\brief 将string解析为配置变化项
+    ///\param msg 配置变化项
+    ///\param strValue 要解码的string
+    ///\return 成功标志 true 解码成功；false 失败
+    virtual bool ParseConfChange(CConfChange &conf, const std::string &strValue);
 };

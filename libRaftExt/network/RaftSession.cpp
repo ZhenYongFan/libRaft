@@ -220,7 +220,7 @@ bool CRaftSession::PushMessage(std::string &strMsgData)
         if (pSerializer->ParseRequestOp(*pRequest,strMsgData))
         {
             pRequest->set_clientid(m_nSessionID);
-            CRequestOp::RequestCase typeRequest = pRequest->request_case();
+            CRequestOp::ERequestCase typeRequest = pRequest->request_case();
             CMessage::EMessageType typeMsg = CMessage::MsgNoUsed;
             if (typeRequest == CRequestOp::kRequestPut || typeRequest == CRequestOp::kRequestDeleteRange)
                 typeMsg = CMessage::MsgProp;

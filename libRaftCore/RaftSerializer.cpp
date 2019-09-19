@@ -86,3 +86,14 @@ bool CRaftSerializer::ParseMessage(CMessage &msg, const std::string &strValue)
     assert(false);
     return false;
 }
+
+void CRaftSerializer::SerializeConfChangee(const CConfChange &conf, std::string &strValue)
+{
+    assert(false);
+}
+
+bool CRaftSerializer::ParseConfChange(CConfChange &conf, const std::string &strValue)
+{
+    assert(false);
+    return false;
+}

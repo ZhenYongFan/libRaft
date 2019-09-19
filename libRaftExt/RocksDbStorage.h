@@ -82,9 +82,18 @@ public:
     
     virtual int SetHardState(const CHardState &stateHard);
     
-    virtual int GetSnapshot(CSnapshot **snapshot);
-    
+    ///\brief 创建快照
+    ///\param u64Index 日志索引号
+    ///\param pConfState 如果不为空，则替代快照的节点ID集合
+    ///\param strData  快照的数据
+    ///\param pSnapshot 如果不为空，返回当前的快照.
+    ///\return 成功标志 OK 成功；其他失败
     virtual int CreateSnapshot(uint64_t i, CConfState *cs, const string& data, CSnapshot *ss);
+
+    ///\brief 取得当前快照
+    ///\param snapshot 返回的快照对象
+    ///\return 成功标志 OK 成功；其他失败
+    virtual int GetSnapshot(CSnapshot & snapshot);
 protected:
 
     ///\brief 通过判断迭代器是否有效判断数据库是否为空

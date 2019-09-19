@@ -3,7 +3,7 @@
 #include "RaftConfig.h"
 #include "RaftQueue.h"
 #include "Raft.h"
-#include "KvRocksdbService.h"
+#include "services/KvRocksdbService.h"
 #include "RocksDbStorage.h"
 #include "RaftMemLog.h"
 #include "RaftUtil.h"

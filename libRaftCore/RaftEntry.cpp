@@ -210,9 +210,74 @@ CRaftEntry *CMessage::add_entries(void)
     return m_pEntry;
 }
 
+void CConfChange::set_context(const std::string &strData)
+{
+    m_u32Len = (uint32_t)strData.size();
+    if (m_u32Len > 0)
+    {
+        if (m_pContext != NULL)
+        {
+            delete[]m_pContext;
+            m_pContext = NULL;
+        }
+    }
+    else
+    {
+        m_pContext = new unsigned char[m_u32Len];
+        memcpy(m_pContext, strData.c_str(), m_u32Len);
+    }
+}
+
 void CConfChange::SerializeToString(std::string &strData)
 {
     char cTemp[256];
     snprintf(cTemp, 256, "%lld\t%d\t%d\t%d", m_nID,int(m_typeChange), m_nRaftID, m_u32Len);
     strData = cTemp;
+}
+
+CConfChange::CConfChange(void)
+{
+    m_nID = 0;
+    m_u32Len = 0;
+    m_pContext = NULL;
+}
+
+CConfChange::~CConfChange(void)
+{
+    if (NULL != m_pContext)
+    {
+        delete[]m_pContext;
+        m_pContext = NULL;
+    }
+}
+
+void CConfChange::Copy(const CConfChange &conf)
+{
+    if (NULL != m_pContext)
+    {
+        delete[]m_pContext;
+        m_pContext = NULL;
+    }
+    m_nID = conf.m_nID;
+    m_typeChange = conf.m_typeChange;
+    m_nRaftID = conf.m_nRaftID;
+    m_u32Len = conf.m_u32Len;
+    if (m_u32Len > 0)
+    {
+        m_pContext = new unsigned char[m_u32Len];
+        memcpy(m_pContext, conf.m_pContext, m_u32Len);
+    }
+    else
+        m_pContext = NULL;
+}
+
+CConfChange::CConfChange(const CConfChange &conf)
+{
+    Copy(conf);
+}
+
+CConfChange & CConfChange::operator =(const CConfChange &conf)
+{
+    Copy(conf);
+    return *this;
 }

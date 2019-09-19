@@ -11,8 +11,12 @@
 #include "RaftQueue.h"
 #include "protobuffer/RaftProtoBufferSerializer.h"
 #include "Log4CxxLogger.h"
-#include "KvService.h"
+#include "../services/KvService.h"
 #include "RequestOp.h"
+
+#ifndef WIN64
+#include <arpa/inet.h>
+#endif
 
 CRaftServer::CRaftServer()
 {
@@ -300,7 +304,7 @@ int CRaftServer::DoLogopt(CLogOperation * pLogOperation)
         pSerializer->ParseRequestOp(*pRequest, pIoReady->m_strRequestCtx);
         uint32_t nClientID = pRequest->clientid();
         uint32_t nSubSessionID = pRequest->subsessionid();
-        CRequestOp::RequestCase typeRequest = pRequest->request_case();
+        CRequestOp::ERequestCase typeRequest = pRequest->request_case();
 
         CResponseOp *pResponse = new CResponseOp();
         pResponse->set_subsessionid(nSubSessionID);
@@ -371,7 +375,7 @@ int CRaftServer::DoLogopt(CLogOperation * pLogOperation)
                 {
                     CRequestOp *pRequest = new CRequestOp();
                     pSerializer->ParseRequestOp(*pRequest, strRequestCtx);
-                    CRequestOp::RequestCase typeRequest = pRequest->request_case();
+                    CRequestOp::ERequestCase typeRequest = pRequest->request_case();
                     if (typeRequest == CRequestOp::kRequestPut)
                     {
                         const CPutRequest &requestPut = pRequest->request_put();

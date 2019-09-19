@@ -166,9 +166,11 @@ public:
 public:
     uint64_t m_u64Term;    ///< 任期号
     uint64_t m_u64Index;   ///< 日志索引号
-    CConfState m_stateConf;
+    CConfState m_stateConf;///< 节点ID集合
 };
 
+
+///\brief 日志快照
 class LIBRAFTCORE_API CSnapshot
 {
 public:
@@ -383,6 +385,7 @@ public:
     std::string m_strContext;   ///< 请求编码后的数据，如读请求
 };
 
+///\brief 可持久化的状态
 class LIBRAFTCORE_API CHardState
 {
 public:
@@ -423,16 +426,41 @@ public:
     uint32_t m_u32VoteID;    ///< 投票目标的ID
 };
 
+///\brief 节点配置变化项
 class LIBRAFTCORE_API CConfChange
 {
 public:
+    ///\brief 配置变化的类型
     enum EConfChangeType
     {
         eConfChangeAddNode = 0,
         eConfChangeRemoveNode = 1,
         eConfChangeUpdateNode = 2
     };
+    ///\brief 构造函数
+    CConfChange(void);
+
+    ///\brief 析构函数
+    ~CConfChange(void);
+
+    ///\brief 复制型构造函数，因为有直接指针申请，所以需要复制型构造函数和赋值运算符
+    ///\param conf 复制源
+    CConfChange(const CConfChange &conf);
+
+    ///\brief 复制型运算符，因为有直接指针申请，所以需要复制型构造函数和赋值运算符
+    ///\param conf 复制源
+    CConfChange & operator =(const CConfChange &conf);
+    
+    ///\brief 复制，用于实现复制型构造函数和赋值运算符
+    ///\param conf 复制源
+    void Copy(const CConfChange &conf);
+
     //一组和protobuffer接口类似的set和get函数
+    inline void set_id(uint32_t nID)
+    {
+        m_nID = nID;
+    }
+
     inline void set_type(EConfChangeType typeChange)
     {
         m_typeChange = typeChange;
@@ -442,12 +470,14 @@ public:
     {
         m_nRaftID = nRaftID;
     }
+    
+    void set_context(const std::string &strData);
 
     void SerializeToString(std::string &strData);
     
     uint64_t        m_nID;          ///< 唯一标识
     EConfChangeType m_typeChange;   ///< 类型
     uint32_t   m_nRaftID;           ///< 节点ID
-    uint32_t m_u32Len;
-    unsigned char *m_pContext;
+    uint32_t m_u32Len;              ///< 附加内容长度
+    unsigned char *m_pContext;      ///< 附加内容缓冲区
 };

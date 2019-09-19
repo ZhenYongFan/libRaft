@@ -6,10 +6,12 @@
 #include <vector>
 using namespace std;
 
+#include "libRaftCore.h"
+
 const static uint32_t None = 0;
 const static uint64_t noLimit = ULONG_MAX;
 
-class CRaftErrNo
+class LIBRAFTCORE_API CRaftErrNo
 {
 public:
     ///\brief 日志操作的错误号 
@@ -25,7 +27,7 @@ public:
     ///\brief 检查错误号是否为成功
     ///\param nErrorNo 错误号
     ///\return 成功标志 true 成功；false 失败
-    static bool CRaftErrNo::Success(int nErrorNo)
+    static bool Success(int nErrorNo)
     {
         return nErrorNo == CRaftErrNo::eOK;
     }
@@ -33,7 +35,7 @@ public:
     ///\brief 根据错误号取得对应的错误信息
     ///\param nErrNo 错误号，有效值域是ErrorCode
     ///\return 对应的错误信息
-    static const char* CRaftErrNo::GetErrorString(int nErrNo);
+    static const char* GetErrorString(int nErrNo);
 };
 
 ///\brief Raft状态机枚举值的定义
@@ -47,7 +49,7 @@ enum EStateType
 };
 
 ///\brief 节点"软"状态，无需持久化
-class CSoftState
+class LIBRAFTCORE_API CSoftState
 {
 public:
     ///\brief 构造函数，Leader缺省为无，状态确认为追随者
@@ -62,7 +64,7 @@ public:
 };
 
 ///\brief 提供IO操作的请求，用于ReadOnly队列和写操作队列，有唯一标识标识读写操作
-class CReadState
+class LIBRAFTCORE_API CReadState
 {
 public:
     uint64_t m_u64Index;      ///< 对应请求时刻的提交日志号
@@ -78,7 +80,7 @@ public:
 };
 
 ///\brief 日志操作 用于修改状态机，应用日志，以及读操作
-class CLogOperation
+class LIBRAFTCORE_API CLogOperation
 {
 public:
     ///\brief 构造函数，缺省为无效的读操作
